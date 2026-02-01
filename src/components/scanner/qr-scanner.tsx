@@ -57,6 +57,16 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
       // Cleanup on unmount - wrap in try/catch to handle DOM removal race
       const scanner = scannerRef.current;
       if (scanner) {
+        // Clear ref immediately to prevent any other code from using it
+        scannerRef.current = null;
+
+        // Check if container still exists in DOM
+        const container = document.getElementById(scannerId);
+        if (!container) {
+          // Container already removed, nothing to clean up
+          return;
+        }
+
         try {
           const state = scanner.getState();
           if (state === Html5QrcodeScannerState.SCANNING) {
@@ -112,10 +122,10 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
               setIsScanning(false);
             }
 
-            // Small delay to let html5-qrcode finish DOM cleanup before React navigation
-            setTimeout(() => {
-              onScan(uuid);
-            }, 50);
+            // Longer delay to let html5-qrcode finish DOM cleanup before React navigation
+            // The library does async cleanup that can race with React's unmount
+            await new Promise(resolve => setTimeout(resolve, 150));
+            onScan(uuid);
           }
         },
         () => {
