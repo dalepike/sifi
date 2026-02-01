@@ -93,11 +93,15 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
             isStoppingRef.current = true;
 
             // Stop scanning first, then call callback
+            const scanner = scannerRef.current;
+            // Clear ref so cleanup effect doesn't try to stop again
+            scannerRef.current = null;
+
             try {
-              if (scannerRef.current) {
-                const state = scannerRef.current.getState();
+              if (scanner) {
+                const state = scanner.getState();
                 if (state === Html5QrcodeScannerState.SCANNING) {
-                  await scannerRef.current.stop();
+                  await scanner.stop();
                 }
               }
             } catch {
@@ -107,7 +111,11 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
             if (isMountedRef.current) {
               setIsScanning(false);
             }
-            onScan(uuid);
+
+            // Small delay to let html5-qrcode finish DOM cleanup before React navigation
+            setTimeout(() => {
+              onScan(uuid);
+            }, 50);
           }
         },
         () => {
