@@ -74,9 +74,30 @@ export function AttachmentItem({
     try {
       const result = await getAttachmentData(attachment.id);
       if (result.success) {
-        // Create data URL and open in new tab
+        // Convert base64 data URL to blob URL (browsers block data URLs in window.open)
         const dataUrl = result.data.data;
-        window.open(dataUrl, "_blank");
+
+        // Extract base64 content from data URL
+        const [header, base64Data] = dataUrl.split(",");
+        const mimeMatch = header?.match(/data:([^;]+)/);
+        const mimeType = mimeMatch?.[1] || "application/octet-stream";
+
+        // Decode base64 to binary
+        const binaryString = atob(base64Data || "");
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // Create blob and blob URL
+        const blob = new Blob([bytes], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Open in new tab
+        window.open(blobUrl, "_blank");
+
+        // Clean up blob URL after a delay (give browser time to load)
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       }
     } catch (error) {
       console.error("Failed to open attachment:", error);
