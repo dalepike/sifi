@@ -1,0 +1,10 @@
+export default function SearchPage() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold">Search</h1>
+      <p className="text-muted-foreground">
+        Search across all your items and locations.
+      </p>
+    </div>
+  );
+}
