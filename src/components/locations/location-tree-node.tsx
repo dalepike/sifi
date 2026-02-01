@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronRight, ChevronDown, MapPin, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,10 @@ interface LocationTreeNodeProps {
   depth: number;
   childCounts?: { locations: number; items: number };
   isSelected?: boolean;
+  isExpanded: boolean;
+  hasChildren: boolean;
   onSelect: (location: Location) => void;
+  onToggleExpand: () => void;
   onAddChild: (parentId: string) => void;
   children?: React.ReactNode;
 }
@@ -21,13 +23,13 @@ export function LocationTreeNode({
   depth,
   childCounts,
   isSelected,
+  isExpanded,
+  hasChildren,
   onSelect,
+  onToggleExpand,
   onAddChild,
   children,
 }: LocationTreeNodeProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const hasChildren = childCounts && childCounts.locations > 0;
-
   return (
     <div>
       <div
@@ -41,7 +43,7 @@ export function LocationTreeNode({
           variant="ghost"
           size="icon"
           className="h-6 w-6 shrink-0"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={onToggleExpand}
           disabled={!hasChildren}
         >
           {hasChildren ? (

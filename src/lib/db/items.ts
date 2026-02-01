@@ -246,31 +246,77 @@ export function getItemWithLocation(
 
   const humanReadableCode = getItemHumanReadableCode(id, userId) || id;
 
+  // Container path is all parent items except the item itself
+  const containerPath = path.items.slice(0, -1);
+
   return {
     ...item,
     locationPath: path.locations,
+    containerPath,
     humanReadableCode,
   };
 }
 
 /**
- * Search items by name
+ * Search items by name and description
  */
 export function searchItems(
   query: string,
   userId: string,
-  limit = 20
-): Item[] {
+  limit = 50
+): ItemWithLocation[] {
   const db = getDb();
+
+  // Search both name and description
   const stmt = db.prepare(`
     SELECT * FROM items
-    WHERE user_id = ? AND name LIKE ?
-    ORDER BY name
+    WHERE user_id = ? AND (name LIKE ? OR description LIKE ?)
+    ORDER BY
+      CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
+      name
     LIMIT ?
   `);
 
-  const rows = stmt.all(userId, `%${query}%`, limit) as Record<string, unknown>[];
-  return rows.map((row) => toCamelCase<Item>(row));
+  const searchTerm = `%${query}%`;
+  const rows = stmt.all(userId, searchTerm, searchTerm, searchTerm, limit) as Record<string, unknown>[];
+  const items = rows.map((row) => toCamelCase<Item>(row));
+
+  // Get full item details with location for each result
+  const results: ItemWithLocation[] = [];
+  for (const item of items) {
+    const itemWithLocation = getItemWithLocation(item.id, userId);
+    if (itemWithLocation) {
+      results.push(itemWithLocation);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Get all containers for a user
+ */
+export function getContainers(userId: string): ItemWithLocation[] {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT * FROM items
+    WHERE user_id = ? AND type = 'container'
+    ORDER BY name
+  `);
+
+  const rows = stmt.all(userId) as Record<string, unknown>[];
+  const items = rows.map((row) => toCamelCase<Item>(row));
+
+  // Get full details with location for each container
+  const results: ItemWithLocation[] = [];
+  for (const item of items) {
+    const itemWithLocation = getItemWithLocation(item.id, userId);
+    if (itemWithLocation) {
+      results.push(itemWithLocation);
+    }
+  }
+
+  return results;
 }
 
 /**

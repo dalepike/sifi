@@ -12,7 +12,6 @@ interface ItemListProps {
   parentType: "location" | "item";
   parentId: string;
   selectedId?: string;
-  onSelect: (item: Item) => void;
   onAdd: () => void;
 }
 
@@ -20,7 +19,6 @@ export function ItemList({
   parentType,
   parentId,
   selectedId,
-  onSelect,
   onAdd,
 }: ItemListProps) {
   const [items, setItems] = useState<Item[]>([]);
@@ -112,7 +110,6 @@ export function ItemList({
               item={item}
               childCount={childCounts[item.id]}
               isSelected={selectedId === item.id}
-              onSelect={onSelect}
             />
           ))}
         </div>

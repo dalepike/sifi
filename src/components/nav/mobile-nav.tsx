@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { MapPin, Search, Activity, Printer } from "lucide-react";
+import { MapPin, Search, Activity, Tag, Printer } from "lucide-react";
 
 const navItems = [
   { href: "/locations", label: "Locations", icon: MapPin },
   { href: "/search", label: "Search", icon: Search },
   { href: "/activities", label: "Activities", icon: Activity },
+  { href: "/tags", label: "Tags", icon: Tag },
   { href: "/print-queue", label: "Print", icon: Printer },
 ];
 

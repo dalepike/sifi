@@ -16,9 +16,10 @@ import type { Location } from "@/types/domain";
 interface LocationBreadcrumbProps {
   path: Location[];
   onNavigate?: (location: Location | null) => void;
+  compact?: boolean;
 }
 
-export function LocationBreadcrumb({ path, onNavigate }: LocationBreadcrumbProps) {
+export function LocationBreadcrumb({ path, onNavigate, compact }: LocationBreadcrumbProps) {
   if (path.length === 0) {
     return null;
   }
@@ -53,14 +54,22 @@ export function LocationBreadcrumb({ path, onNavigate }: LocationBreadcrumbProps
         {path.map((location, index) => {
           const isLast = index === path.length - 1;
 
+          const content = compact ? (
+            <span className="font-mono text-xs">{location.code}</span>
+          ) : (
+            <>
+              <span className="font-mono text-xs">{location.code}</span>
+              <span>{location.name}</span>
+            </>
+          );
+
           return (
             <Fragment key={location.id}>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage className="flex items-center gap-1">
-                    <span className="font-mono text-xs">{location.code}</span>
-                    <span>{location.name}</span>
+                    {content}
                   </BreadcrumbPage>
                 ) : onNavigate ? (
                   <BreadcrumbLink asChild>
@@ -68,8 +77,7 @@ export function LocationBreadcrumb({ path, onNavigate }: LocationBreadcrumbProps
                       onClick={() => handleClick(location)}
                       className="flex items-center gap-1"
                     >
-                      <span className="font-mono text-xs">{location.code}</span>
-                      <span>{location.name}</span>
+                      {content}
                     </button>
                   </BreadcrumbLink>
                 ) : (
@@ -78,8 +86,7 @@ export function LocationBreadcrumb({ path, onNavigate }: LocationBreadcrumbProps
                       href={`/locations/${location.id}`}
                       className="flex items-center gap-1"
                     >
-                      <span className="font-mono text-xs">{location.code}</span>
-                      <span>{location.name}</span>
+                      {content}
                     </Link>
                   </BreadcrumbLink>
                 )}

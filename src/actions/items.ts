@@ -14,11 +14,13 @@ import {
   getItemChildCount,
   moveItem as dbMoveItem,
   searchItems as dbSearchItems,
+  getContainers as dbGetContainers,
 } from "@/lib/db/items";
 import { getLocationById } from "@/lib/db/locations";
 import type { Item, ItemWithLocation } from "@/types/domain";
 
 const createItemSchema = z.object({
+  id: z.string().uuid().optional(),
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
   description: z.string().max(500, "Description is too long").optional(),
   type: z.enum(["container", "object"]),
@@ -53,6 +55,7 @@ export async function createItem(
   }
 
   const rawData = {
+    id: formData.get("id") || undefined,
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     type: formData.get("type"),
@@ -69,7 +72,7 @@ export async function createItem(
     };
   }
 
-  const { name, description, type, parentLocationId, parentItemId, photos } =
+  const { id, name, description, type, parentLocationId, parentItemId, photos } =
     parsed.data;
 
   // Validate exactly one parent
@@ -103,6 +106,7 @@ export async function createItem(
 
   try {
     const item = dbCreateItem({
+      id,
       userId,
       name,
       description: description || null,
@@ -288,7 +292,7 @@ export async function moveItem(
 
 export async function searchItems(
   query: string
-): Promise<ActionResult<Item[]>> {
+): Promise<ActionResult<ItemWithLocation[]>> {
   const userId = await getUserId();
   if (!userId) {
     return { success: false, error: "You must be logged in" };
@@ -300,4 +304,14 @@ export async function searchItems(
 
   const items = dbSearchItems(query, userId);
   return { success: true, data: items };
+}
+
+export async function getContainers(): Promise<ActionResult<ItemWithLocation[]>> {
+  const userId = await getUserId();
+  if (!userId) {
+    return { success: false, error: "You must be logged in" };
+  }
+
+  const containers = dbGetContainers(userId);
+  return { success: true, data: containers };
 }

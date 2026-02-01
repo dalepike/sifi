@@ -78,6 +78,7 @@ export interface NewItem {
 
 export type ItemWithLocation = Item & {
   locationPath: Location[];
+  containerPath: Item[]; // Parent containers (not including the item itself)
   humanReadableCode: string;
 };
 
@@ -102,8 +103,8 @@ export function hasItemParent(
   return item.parentItemId !== null;
 }
 
-// Category
-export interface Category {
+// Tag (renamed from Category in application layer - DB table is still 'categories')
+export interface Tag {
   id: string;
   userId: string;
   name: string;
@@ -112,7 +113,7 @@ export interface Category {
   createdAt: string;
 }
 
-export interface NewCategory {
+export interface NewTag {
   id?: string;
   userId: string;
   name: string;
@@ -120,13 +121,23 @@ export interface NewCategory {
   color: string;
 }
 
-// Activity (project)
+export interface TagWithItemCount extends Tag {
+  itemCount: number;
+}
+
+// Item-Tag relationship
+export interface ItemTag {
+  itemId: string;
+  tagId: string;
+  createdAt: string;
+}
+
+// Activity (hobbies/crafts - items belong to activities)
 export type ActivityStatus = "active" | "archived";
 
 export interface Activity extends Timestamps {
   id: string;
   userId: string;
-  categoryId: string | null;
   name: string;
   description: string | null;
   status: ActivityStatus;
@@ -135,17 +146,16 @@ export interface Activity extends Timestamps {
 export interface NewActivity {
   id?: string;
   userId: string;
-  categoryId?: string | null;
   name: string;
   description?: string | null;
   status?: ActivityStatus;
 }
 
-export interface ActivityWithCategory extends Activity {
-  category: Category | null;
+export interface ActivityWithItemCount extends Activity {
+  itemCount: number;
 }
 
-export interface ActivityWithItems extends ActivityWithCategory {
+export interface ActivityWithItems extends Activity {
   items: ItemWithLocation[];
 }
 

@@ -9,6 +9,7 @@ import {
   deleteLocation as dbDeleteLocation,
   getLocationById as dbGetLocationById,
   getChildLocations as dbGetChildLocations,
+  getLocationsByUserId,
   getLocationWithPath,
   getLocationChildCounts,
   isCodeUnique,
@@ -265,4 +266,32 @@ export async function getLocationChildren(id: string): Promise<
   const children = dbGetChildLocations(id, userId);
 
   return { success: true, data: { counts, children } };
+}
+
+export async function getAllLocations(): Promise<
+  ActionResult<{ locations: Location[]; counts: Map<string, { locations: number; items: number }> }>
+> {
+  const userId = await getUserId();
+  if (!userId) {
+    return { success: false, error: "You must be logged in" };
+  }
+
+  const locations = getLocationsByUserId(userId);
+
+  // Build counts map for all locations
+  const countsMap = new Map<string, { locations: number; items: number }>();
+  for (const loc of locations) {
+    countsMap.set(loc.id, getLocationChildCounts(loc.id, userId));
+  }
+
+  // Convert Map to plain object for serialization
+  const countsObject = Object.fromEntries(countsMap);
+
+  return {
+    success: true,
+    data: {
+      locations,
+      counts: countsObject as unknown as Map<string, { locations: number; items: number }>
+    }
+  };
 }

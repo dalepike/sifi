@@ -1,5 +1,5 @@
 -- SiFi Database Schema
--- 6 tables for inventory tracking
+-- 7 tables for inventory tracking
 
 -- Users (for multi-user foundation)
 CREATE TABLE IF NOT EXISTS users (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS items (
   )
 );
 
--- Categories
+-- Categories (used as Tags for items - kept as 'categories' table to avoid migration)
 CREATE TABLE IF NOT EXISTS categories (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -51,11 +51,18 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Activities (projects)
+-- Item-Tag references (many-to-many between items and categories/tags)
+CREATE TABLE IF NOT EXISTS item_tags (
+  item_id TEXT REFERENCES items(id) ON DELETE CASCADE,
+  tag_id TEXT REFERENCES categories(id) ON DELETE CASCADE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (item_id, tag_id)
+);
+
+-- Activities (hobbies/crafts - items belong to activities)
 CREATE TABLE IF NOT EXISTS activities (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   description TEXT,
   status TEXT DEFAULT 'active' CHECK(status IN ('active', 'archived')),
@@ -80,3 +87,4 @@ CREATE INDEX IF NOT EXISTS idx_items_parent_item ON items(parent_item_id);
 CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_items_item ON activity_items(item_id);
+CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag_id);

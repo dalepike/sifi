@@ -65,13 +65,11 @@ export function ScanResult({ uuid }: ScanResultProps) {
     setError(null);
 
     const formData = new FormData();
+    formData.set("id", uuid);
     formData.set("name", itemName.trim());
     formData.set("type", itemType);
     formData.set("parentLocationId", selectedLocationId);
 
-    // Note: We're creating with a new UUID here since we can't
-    // pass a custom ID through the createItem action.
-    // In a full implementation, we'd modify createItem to accept an optional ID.
     const result = await createItem(formData);
 
     setCreating(false);

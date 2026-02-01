@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,9 +10,9 @@ import {
   Trash2,
   Package,
   Box,
-  QrCode,
   Copy,
-  Printer,
+  Move,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,11 +28,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { LocationBreadcrumb } from "@/components/locations/location-breadcrumb";
+import { ItemBreadcrumb } from "@/components/items/item-breadcrumb";
 import { ItemFormDialog } from "@/components/items/item-form-dialog";
+import { MoveItemDialog } from "@/components/items/move-item-dialog";
+import { ItemQRCode } from "@/components/items/item-qr-code";
 import { deleteItem, getItemsInContainer } from "@/actions/items";
-import { getItemQRCode } from "@/actions/qr";
-import { addToPrintQueue } from "@/lib/print-queue";
 import type { ItemWithLocation, Item } from "@/types/domain";
 
 interface ItemDetailViewProps {
@@ -42,45 +42,37 @@ interface ItemDetailViewProps {
 export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
   const router = useRouter();
   const [item] = useState(initialItem);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [loadingQR, setLoadingQR] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [childCount, setChildCount] = useState<number | null>(null);
+  const [containerContents, setContainerContents] = useState<Item[]>([]);
+  const [loadingContents, setLoadingContents] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const isContainer = item.type === "container";
   const Icon = isContainer ? Box : Package;
 
-  // Load child count if container
-  useState(() => {
+  // Load container contents if this is a container
+  useEffect(() => {
     if (isContainer) {
+      setLoadingContents(true);
       getItemsInContainer(item.id).then((result) => {
         if (result.success) {
-          setChildCount(result.data.length);
+          setContainerContents(result.data);
         }
+        setLoadingContents(false);
       });
     }
-  });
+  }, [isContainer, item.id]);
 
-  const handleLoadQR = async () => {
-    setLoadingQR(true);
-    const result = await getItemQRCode(item.id);
-    if (result.success) {
-      setQrCode(result.data.dataUrl);
-    }
-    setLoadingQR(false);
+  const reloadItem = () => {
+    router.refresh();
   };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(item.humanReadableCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleAddToQueue = () => {
-    addToPrintQueue(item.id);
-    // Could show a toast here
   };
 
   const handleDelete = async () => {
@@ -108,19 +100,23 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
     }
   }
 
-  const canDelete = !isContainer || childCount === 0;
+  const canDelete = !isContainer || containerContents.length === 0;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* Header */}
+      {/* Header with full path breadcrumb */}
       <div className="flex items-center gap-2">
         <Link href="/locations">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <LocationBreadcrumb path={item.locationPath} />
+        <div className="flex-1 overflow-x-auto">
+          <ItemBreadcrumb
+            locationPath={item.locationPath}
+            containerPath={item.containerPath}
+            currentItemName={item.name}
+          />
         </div>
       </div>
 
@@ -153,7 +149,16 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => setMoveDialogOpen(true)}
+              title="Move item"
+            >
+              <Move className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setEditDialogOpen(true)}
+              title="Edit item"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -224,54 +229,53 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
             </div>
           )}
 
-          {/* QR Code Section */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">QR Code</h3>
-            {qrCode ? (
-              <div className="flex items-start gap-4">
-                <img
-                  src={qrCode}
-                  alt="QR Code"
-                  className="h-32 w-32 rounded-md border"
-                />
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Scan this code to quickly find this item
-                  </p>
-                  <Button size="sm" variant="outline" onClick={handleAddToQueue}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Add to Print Queue
-                  </Button>
-                </div>
+          {/* Container Contents - Show immediately for "visibility without opening" */}
+          {isContainer && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">
+                  Contents ({containerContents.length} item{containerContents.length !== 1 && "s"})
+                </h3>
               </div>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={handleLoadQR}
-                disabled={loadingQR}
-              >
-                <QrCode className="mr-2 h-4 w-4" />
-                {loadingQR ? "Generating..." : "Show QR Code"}
-              </Button>
-            )}
-          </div>
-
-          {/* Container contents */}
-          {isContainer && childCount !== null && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Contents</h3>
-              <p className="text-sm text-muted-foreground">
-                {childCount} item{childCount !== 1 && "s"} inside
-              </p>
-              {childCount > 0 && (
-                <Link href={`/locations?container=${item.id}`}>
-                  <Button variant="outline" size="sm">
-                    View Contents
-                  </Button>
-                </Link>
+              {loadingContents ? (
+                <p className="text-sm text-muted-foreground">Loading contents...</p>
+              ) : containerContents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">This container is empty</p>
+              ) : (
+                <div className="space-y-1">
+                  {containerContents.map((child) => (
+                    <Link key={child.id} href={`/items/${child.id}`}>
+                      <div className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent transition-colors">
+                        {child.type === "container" ? (
+                          <Box className="h-5 w-5 text-muted-foreground shrink-0" />
+                        ) : (
+                          <Package className="h-5 w-5 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{child.name}</p>
+                          {child.description && (
+                            <p className="text-sm text-muted-foreground truncate">
+                              {child.description}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={child.type === "container" ? "default" : "secondary"} className="shrink-0">
+                          {child.type === "container" ? "Container" : "Object"}
+                        </Badge>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               )}
             </div>
           )}
+
+          {/* QR Code Section */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">QR Code</h3>
+            <ItemQRCode itemId={item.id} humanReadableCode={item.humanReadableCode} />
+          </div>
 
           {/* Metadata */}
           <div className="space-y-1 border-t pt-4 text-xs text-muted-foreground">
@@ -298,6 +302,16 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
         onOpenChange={setEditDialogOpen}
         item={item}
         onSuccess={handleEditSuccess}
+      />
+
+      {/* Move Dialog */}
+      <MoveItemDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        itemId={item.id}
+        itemName={item.name}
+        currentLocationPath={item.locationPath}
+        onSuccess={reloadItem}
       />
     </div>
   );
