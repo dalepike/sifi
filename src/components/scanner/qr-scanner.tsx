@@ -54,29 +54,29 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
       // Mark as unmounted to prevent state updates
       isMountedRef.current = false;
 
-      // Cleanup on unmount - wrap in try/catch to handle DOM removal race
+      // Cleanup on unmount
       const scanner = scannerRef.current;
+      scannerRef.current = null;
+
+      const container = document.getElementById(scannerId);
+
+      // First, stop the scanner if running
       if (scanner) {
-        // Clear ref immediately to prevent any other code from using it
-        scannerRef.current = null;
-
-        // Check if container still exists in DOM
-        const container = document.getElementById(scannerId);
-        if (!container) {
-          // Container already removed, nothing to clean up
-          return;
-        }
-
         try {
           const state = scanner.getState();
           if (state === Html5QrcodeScannerState.SCANNING) {
-            scanner.stop().catch(() => {
-              // Ignore errors during cleanup - DOM may already be gone
-            });
+            // Don't await - just fire and forget
+            scanner.stop().catch(() => {});
           }
         } catch {
           // Scanner may already be in invalid state
         }
+      }
+
+      // Clear the container's children BEFORE React tries to unmount
+      // This prevents React from trying to remove nodes that html5-qrcode already removed
+      if (container) {
+        container.innerHTML = "";
       }
     };
   }, []);
@@ -194,14 +194,18 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
 
   return (
     <div className="space-y-4">
-      {/* Scanner viewport */}
-      <div
-        id="qr-scanner-container"
-        ref={containerRef}
-        className="relative aspect-square w-full max-w-sm mx-auto overflow-hidden rounded-lg bg-black"
-      >
+      {/* Scanner viewport - use wrapper to isolate html5-qrcode DOM changes from React */}
+      <div className="relative aspect-square w-full max-w-sm mx-auto overflow-hidden rounded-lg bg-black">
+        {/* Inner container managed by html5-qrcode - React won't track children */}
+        <div
+          id="qr-scanner-container"
+          ref={containerRef}
+          className="w-full h-full"
+          // Suppress React's DOM diffing for this subtree since html5-qrcode manages it
+          suppressHydrationWarning
+        />
         {!isScanning && (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+          <div className="absolute inset-0 flex items-center justify-center bg-muted pointer-events-none">
             <Camera className="h-16 w-16 text-muted-foreground" />
           </div>
         )}
