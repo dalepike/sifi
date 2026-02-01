@@ -11,19 +11,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        console.log("[auth] authorize called");
         if (!credentials?.email || !credentials?.password) {
+          console.log("[auth] missing credentials");
           return null;
         }
 
         const email = credentials.email as string;
         const password = credentials.password as string;
+        console.log("[auth] looking up user:", email);
 
-        const user = getUserWithPasswordHash(email);
+        const user = await getUserWithPasswordHash(email);
+        console.log("[auth] user found:", !!user);
         if (!user) {
           return null;
         }
 
+        console.log("[auth] verifying password, hash length:", user.passwordHash?.length);
         const isValid = verifyPassword(password, user.passwordHash);
+        console.log("[auth] password valid:", isValid);
         if (!isValid) {
           return null;
         }
@@ -40,7 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (token.sub) {
         session.user.id = token.sub;
-        const user = getUserById(token.sub);
+        const user = await getUserById(token.sub);
         if (user) {
           session.user.name = user.name;
           session.user.email = user.email;

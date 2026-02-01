@@ -77,7 +77,7 @@ export async function createLocation(
   const { name, description, code, parentId } = parsed.data;
 
   // Check code uniqueness
-  if (!isCodeUnique(code, userId)) {
+  if (!(await isCodeUnique(code, userId))) {
     return {
       success: false,
       error: "A location with this code already exists",
@@ -86,14 +86,14 @@ export async function createLocation(
 
   // If parentId is provided, verify it exists and belongs to user
   if (parentId) {
-    const parent = dbGetLocationById(parentId, userId);
+    const parent = await dbGetLocationById(parentId, userId);
     if (!parent) {
       return { success: false, error: "Parent location not found" };
     }
   }
 
   try {
-    const location = dbCreateLocation({
+    const location = await dbCreateLocation({
       userId,
       name,
       description: description || null,
@@ -139,13 +139,13 @@ export async function updateLocation(
   const { id, name, description, code, parentId } = parsed.data;
 
   // Verify location exists and belongs to user
-  const existing = dbGetLocationById(id, userId);
+  const existing = await dbGetLocationById(id, userId);
   if (!existing) {
     return { success: false, error: "Location not found" };
   }
 
   // Check code uniqueness if code is being changed
-  if (code && !isCodeUnique(code, userId, id)) {
+  if (code && !(await isCodeUnique(code, userId, id))) {
     return {
       success: false,
       error: "A location with this code already exists",
@@ -159,20 +159,20 @@ export async function updateLocation(
       return { success: false, error: "A location cannot be its own parent" };
     }
 
-    const parent = dbGetLocationById(parentId, userId);
+    const parent = await dbGetLocationById(parentId, userId);
     if (!parent) {
       return { success: false, error: "Parent location not found" };
     }
 
     // Check for circular reference
-    const parentPath = getLocationWithPath(parentId, userId);
+    const parentPath = await getLocationWithPath(parentId, userId);
     if (parentPath?.path.some((loc) => loc.id === id)) {
       return { success: false, error: "Cannot create circular hierarchy" };
     }
   }
 
   try {
-    const location = dbUpdateLocation(id, userId, {
+    const location = await dbUpdateLocation(id, userId, {
       name,
       description: description !== undefined ? description || null : undefined,
       code,
@@ -203,13 +203,13 @@ export async function deleteLocation(
   }
 
   // Verify location exists and belongs to user
-  const existing = dbGetLocationById(id, userId);
+  const existing = await dbGetLocationById(id, userId);
   if (!existing) {
     return { success: false, error: "Location not found" };
   }
 
   try {
-    const deleted = dbDeleteLocation(id, userId);
+    const deleted = await dbDeleteLocation(id, userId);
     revalidatePath("/locations");
     return { success: true, data: { deleted } };
   } catch (error) {
@@ -231,7 +231,7 @@ export async function getLocation(
     return { success: false, error: "You must be logged in" };
   }
 
-  const location = getLocationWithPath(id, userId);
+  const location = await getLocationWithPath(id, userId);
   if (!location) {
     return { success: false, error: "Location not found" };
   }
@@ -247,7 +247,7 @@ export async function getLocations(
     return { success: false, error: "You must be logged in" };
   }
 
-  const locations = dbGetChildLocations(parentId ?? null, userId);
+  const locations = await dbGetChildLocations(parentId ?? null, userId);
   return { success: true, data: locations };
 }
 
@@ -262,8 +262,8 @@ export async function getLocationChildren(id: string): Promise<
     return { success: false, error: "You must be logged in" };
   }
 
-  const counts = getLocationChildCounts(id, userId);
-  const children = dbGetChildLocations(id, userId);
+  const counts = await getLocationChildCounts(id, userId);
+  const children = await dbGetChildLocations(id, userId);
 
   return { success: true, data: { counts, children } };
 }
@@ -276,12 +276,12 @@ export async function getAllLocations(): Promise<
     return { success: false, error: "You must be logged in" };
   }
 
-  const locations = getLocationsByUserId(userId);
+  const locations = await getLocationsByUserId(userId);
 
   // Build counts map for all locations
   const countsMap = new Map<string, { locations: number; items: number }>();
   for (const loc of locations) {
-    countsMap.set(loc.id, getLocationChildCounts(loc.id, userId));
+    countsMap.set(loc.id, await getLocationChildCounts(loc.id, userId));
   }
 
   // Convert Map to plain object for serialization

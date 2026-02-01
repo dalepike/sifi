@@ -1,144 +1,151 @@
-import { getDb, toCamelCase } from "./client";
-import type { ActivityItem, ItemWithLocation } from "@/types/domain";
+import { eq, and, sql } from "drizzle-orm";
+import { db, formatDateRequired } from "./drizzle-client";
+import { activityItems, activities, items } from "./schema";
 import { getItemWithLocation } from "./items";
+import type { ActivityItem, ItemWithLocation } from "@/types/domain";
 
-/**
- * Activity-Item relationship database operations
- */
-
-export function addItemToActivity(
+export async function addItemToActivity(
   activityId: string,
   itemId: string,
   userId: string
-): ActivityItem | undefined {
-  const db = getDb();
-  const now = new Date().toISOString();
-
+): Promise<ActivityItem | undefined> {
   // Verify activity belongs to user
-  const activityCheck = db.prepare(`
-    SELECT id FROM activities WHERE id = ? AND user_id = ?
-  `);
-  const activity = activityCheck.get(activityId, userId);
+  const [activity] = await db
+    .select({ id: activities.id })
+    .from(activities)
+    .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
+    .limit(1);
+
   if (!activity) return undefined;
 
   // Verify item belongs to user
-  const itemCheck = db.prepare(`
-    SELECT id FROM items WHERE id = ? AND user_id = ?
-  `);
-  const item = itemCheck.get(itemId, userId);
+  const [item] = await db
+    .select({ id: items.id })
+    .from(items)
+    .where(and(eq(items.id, itemId), eq(items.userId, userId)))
+    .limit(1);
+
   if (!item) return undefined;
 
   // Check if already exists
-  const existingStmt = db.prepare(`
-    SELECT * FROM activity_items WHERE activity_id = ? AND item_id = ?
-  `);
-  const existing = existingStmt.get(activityId, itemId);
+  const [existing] = await db
+    .select()
+    .from(activityItems)
+    .where(
+      and(
+        eq(activityItems.activityId, activityId),
+        eq(activityItems.itemId, itemId)
+      )
+    )
+    .limit(1);
+
   if (existing) {
-    return toCamelCase<ActivityItem>(existing as Record<string, unknown>);
+    return {
+      activityId: existing.activityId,
+      itemId: existing.itemId,
+      createdAt: formatDateRequired(existing.createdAt),
+    };
   }
 
   // Insert new relationship
-  const stmt = db.prepare(`
-    INSERT INTO activity_items (activity_id, item_id, created_at)
-    VALUES (?, ?, ?)
-  `);
-  stmt.run(activityId, itemId, now);
+  const [row] = await db
+    .insert(activityItems)
+    .values({ activityId, itemId })
+    .returning();
+
+  if (!row) {
+    throw new Error("Failed to add item to activity");
+  }
 
   return {
-    activityId,
-    itemId,
-    createdAt: now,
+    activityId: row.activityId,
+    itemId: row.itemId,
+    createdAt: formatDateRequired(row.createdAt),
   };
 }
 
-export function removeItemFromActivity(
+export async function removeItemFromActivity(
   activityId: string,
   itemId: string,
   userId: string
-): boolean {
-  const db = getDb();
-
+): Promise<boolean> {
   // Verify activity belongs to user
-  const activityCheck = db.prepare(`
-    SELECT id FROM activities WHERE id = ? AND user_id = ?
-  `);
-  const activity = activityCheck.get(activityId, userId);
+  const [activity] = await db
+    .select({ id: activities.id })
+    .from(activities)
+    .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
+    .limit(1);
+
   if (!activity) return false;
 
-  const stmt = db.prepare(`
-    DELETE FROM activity_items WHERE activity_id = ? AND item_id = ?
-  `);
-  const result = stmt.run(activityId, itemId);
-  return result.changes > 0;
+  const result = await db
+    .delete(activityItems)
+    .where(
+      and(
+        eq(activityItems.activityId, activityId),
+        eq(activityItems.itemId, itemId)
+      )
+    )
+    .returning();
+
+  return result.length > 0;
 }
 
-export function getItemsForActivity(
+export async function getItemsForActivity(
   activityId: string,
   userId: string
-): ItemWithLocation[] {
-  const db = getDb();
-
+): Promise<ItemWithLocation[]> {
   // Get item IDs for the activity
-  const stmt = db.prepare(`
+  const result = await db.execute(sql`
     SELECT ai.item_id
     FROM activity_items ai
     JOIN activities a ON ai.activity_id = a.id
-    WHERE ai.activity_id = ? AND a.user_id = ?
+    WHERE ai.activity_id = ${activityId} AND a.user_id = ${userId}
     ORDER BY ai.created_at DESC
   `);
 
-  const rows = stmt.all(activityId, userId) as { item_id: string }[];
+  const rows = result.rows as { item_id: string }[];
 
   // Get full item details for each
-  const items: ItemWithLocation[] = [];
+  const itemsList: ItemWithLocation[] = [];
   for (const row of rows) {
-    const item = getItemWithLocation(row.item_id, userId);
+    const item = await getItemWithLocation(row.item_id, userId);
     if (item) {
-      items.push(item);
+      itemsList.push(item);
     }
   }
 
-  return items;
+  return itemsList;
 }
 
-export function getActivitiesForItem(
+export async function getActivitiesForItem(
   itemId: string,
   userId: string
-): { id: string; name: string }[] {
-  const db = getDb();
-
-  const stmt = db.prepare(`
+): Promise<{ id: string; name: string }[]> {
+  const result = await db.execute(sql`
     SELECT a.id, a.name
     FROM activity_items ai
     JOIN activities a ON ai.activity_id = a.id
-    WHERE ai.item_id = ? AND a.user_id = ? AND a.status = 'active'
+    WHERE ai.item_id = ${itemId} AND a.user_id = ${userId} AND a.status = 'active'
     ORDER BY a.name
   `);
 
-  const rows = stmt.all(itemId, userId) as {
-    id: string;
-    name: string;
-  }[];
-
-  return rows.map((row) => ({
+  return (result.rows as { id: string; name: string }[]).map((row) => ({
     id: row.id,
     name: row.name,
   }));
 }
 
-export function isItemInActivity(
+export async function isItemInActivity(
   activityId: string,
   itemId: string,
   userId: string
-): boolean {
-  const db = getDb();
-
-  const stmt = db.prepare(`
+): Promise<boolean> {
+  const result = await db.execute(sql`
     SELECT 1 FROM activity_items ai
     JOIN activities a ON ai.activity_id = a.id
-    WHERE ai.activity_id = ? AND ai.item_id = ? AND a.user_id = ?
+    WHERE ai.activity_id = ${activityId} AND ai.item_id = ${itemId} AND a.user_id = ${userId}
   `);
 
-  const result = stmt.get(activityId, itemId, userId);
-  return !!result;
+  return result.rows.length > 0;
 }

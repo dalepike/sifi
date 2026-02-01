@@ -1,17 +1,26 @@
-import { v4 as uuid } from "uuid";
-import { getDb, toCamelCase } from "./client";
+import { eq, and, sql, ilike, or, desc, asc } from "drizzle-orm";
+import { db, formatDateRequired } from "./drizzle-client";
+import { items, locations } from "./schema";
 import { getLocationById, getLocationPath } from "./locations";
 import type { Item, NewItem, ItemWithLocation, Location } from "@/types/domain";
 
-/**
- * Item database operations
- */
+// Convert Drizzle item to domain Item type
+function toDomainItem(row: typeof items.$inferSelect): Item {
+  return {
+    id: row.id,
+    userId: row.userId,
+    type: row.type,
+    name: row.name,
+    description: row.description,
+    parentLocationId: row.parentLocationId,
+    parentItemId: row.parentItemId,
+    photos: row.photos,
+    createdAt: formatDateRequired(row.createdAt),
+    updatedAt: formatDateRequired(row.updatedAt),
+  } as Item;
+}
 
-export function createItem(data: NewItem): Item {
-  const db = getDb();
-  const id = data.id || uuid();
-  const now = new Date().toISOString();
-
+export async function createItem(data: NewItem): Promise<Item> {
   // Validate XOR constraint
   const hasLocationParent = !!data.parentLocationId;
   const hasItemParent = !!data.parentItemId;
@@ -20,89 +29,88 @@ export function createItem(data: NewItem): Item {
     throw new Error("Item must have exactly one parent (location or item)");
   }
 
-  const stmt = db.prepare(`
-    INSERT INTO items (id, user_id, type, name, description, parent_location_id, parent_item_id, photos, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+  const [row] = await db
+    .insert(items)
+    .values({
+      id: data.id,
+      userId: data.userId,
+      type: data.type,
+      name: data.name,
+      description: data.description ?? null,
+      parentLocationId: data.parentLocationId ?? null,
+      parentItemId: data.parentItemId ?? null,
+      photos: data.photos ?? null,
+    })
+    .returning();
 
-  stmt.run(
-    id,
-    data.userId,
-    data.type,
-    data.name,
-    data.description || null,
-    data.parentLocationId || null,
-    data.parentItemId || null,
-    data.photos || null,
-    now,
-    now
-  );
+  if (!row) {
+    throw new Error("Failed to create item");
+  }
 
-  return getItemById(id, data.userId)!;
+  return toDomainItem(row);
 }
 
-export function getItemById(id: string, userId: string): Item | undefined {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM items WHERE id = ? AND user_id = ?
-  `);
+export async function getItemById(
+  id: string,
+  userId: string
+): Promise<Item | undefined> {
+  const [row] = await db
+    .select()
+    .from(items)
+    .where(and(eq(items.id, id), eq(items.userId, userId)))
+    .limit(1);
 
-  const row = stmt.get(id, userId) as Record<string, unknown> | undefined;
-  return row ? toCamelCase<Item>(row) : undefined;
+  return row ? toDomainItem(row) : undefined;
 }
 
-export function getItemsByLocationId(
+export async function getItemsByLocationId(
   locationId: string,
   userId: string
-): Item[] {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM items WHERE parent_location_id = ? AND user_id = ? ORDER BY type DESC, name
-  `);
+): Promise<Item[]> {
+  const rows = await db
+    .select()
+    .from(items)
+    .where(
+      and(eq(items.parentLocationId, locationId), eq(items.userId, userId))
+    )
+    .orderBy(desc(items.type), asc(items.name));
 
-  const rows = stmt.all(locationId, userId) as Record<string, unknown>[];
-  return rows.map((row) => toCamelCase<Item>(row));
+  return rows.map(toDomainItem);
 }
 
-export function getItemsByParentItemId(
+export async function getItemsByParentItemId(
   parentItemId: string,
   userId: string
-): Item[] {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM items WHERE parent_item_id = ? AND user_id = ? ORDER BY type DESC, name
-  `);
+): Promise<Item[]> {
+  const rows = await db
+    .select()
+    .from(items)
+    .where(and(eq(items.parentItemId, parentItemId), eq(items.userId, userId)))
+    .orderBy(desc(items.type), asc(items.name));
 
-  const rows = stmt.all(parentItemId, userId) as Record<string, unknown>[];
-  return rows.map((row) => toCamelCase<Item>(row));
+  return rows.map(toDomainItem);
 }
 
-export function updateItem(
+export async function updateItem(
   id: string,
   userId: string,
   data: Partial<Omit<NewItem, "userId">>
-): Item | undefined {
-  const db = getDb();
-  const now = new Date().toISOString();
-
-  const updates: string[] = [];
-  const values: unknown[] = [];
+): Promise<Item | undefined> {
+  const updateData: Partial<typeof items.$inferInsert> = {
+    updatedAt: new Date(),
+  };
 
   if (data.name !== undefined) {
-    updates.push("name = ?");
-    values.push(data.name);
+    updateData.name = data.name;
   }
   if (data.description !== undefined) {
-    updates.push("description = ?");
-    values.push(data.description);
+    updateData.description = data.description;
   }
   if (data.type !== undefined) {
-    updates.push("type = ?");
-    values.push(data.type);
+    updateData.type = data.type;
   }
   if (data.photos !== undefined) {
-    updates.push("photos = ?");
-    values.push(data.photos);
+    updateData.photos = data.photos;
   }
 
   // Handle parent changes (must maintain XOR constraint)
@@ -114,137 +122,149 @@ export function updateItem(
       throw new Error("Item must have exactly one parent (location or item)");
     }
 
-    updates.push("parent_location_id = ?");
-    values.push(newLocationParent);
-    updates.push("parent_item_id = ?");
-    values.push(newItemParent);
+    updateData.parentLocationId = newLocationParent;
+    updateData.parentItemId = newItemParent;
   }
 
-  if (updates.length === 0) {
-    return getItemById(id, userId);
-  }
+  const [row] = await db
+    .update(items)
+    .set(updateData)
+    .where(and(eq(items.id, id), eq(items.userId, userId)))
+    .returning();
 
-  updates.push("updated_at = ?");
-  values.push(now);
-  values.push(id);
-  values.push(userId);
-
-  const stmt = db.prepare(`
-    UPDATE items SET ${updates.join(", ")} WHERE id = ? AND user_id = ?
-  `);
-  stmt.run(...values);
-
-  return getItemById(id, userId);
+  return row ? toDomainItem(row) : undefined;
 }
 
-export function deleteItem(id: string, userId: string): boolean {
-  const db = getDb();
-
+export async function deleteItem(id: string, userId: string): Promise<boolean> {
   // Check for child items (only containers can have children)
-  const childStmt = db.prepare(`
-    SELECT COUNT(*) as count FROM items WHERE parent_item_id = ? AND user_id = ?
-  `);
-  const childResult = childStmt.get(id, userId) as { count: number };
+  const [childResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(items)
+    .where(and(eq(items.parentItemId, id), eq(items.userId, userId)));
 
-  if (childResult.count > 0) {
+  const childCount = Number(childResult?.count ?? 0);
+  if (childCount > 0) {
     throw new Error(
-      `Cannot delete item: has ${childResult.count} child item(s)`
+      `Cannot delete item: has ${childCount} child item(s)`
     );
   }
 
-  const stmt = db.prepare(`
-    DELETE FROM items WHERE id = ? AND user_id = ?
-  `);
-  const result = stmt.run(id, userId);
-  return result.changes > 0;
+  const result = await db
+    .delete(items)
+    .where(and(eq(items.id, id), eq(items.userId, userId)))
+    .returning();
+
+  return result.length > 0;
 }
 
-export function getItemChildCount(id: string, userId: string): number {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT COUNT(*) as count FROM items WHERE parent_item_id = ? AND user_id = ?
-  `);
-  const result = stmt.get(id, userId) as { count: number };
-  return result.count;
+export async function getItemChildCount(
+  id: string,
+  userId: string
+): Promise<number> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(items)
+    .where(and(eq(items.parentItemId, id), eq(items.userId, userId)));
+
+  return Number(result?.count ?? 0);
 }
 
-export function getItemCountByLocation(
+export async function getItemCountByLocation(
   locationId: string,
   userId: string
-): number {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT COUNT(*) as count FROM items WHERE parent_location_id = ? AND user_id = ?
-  `);
-  const result = stmt.get(locationId, userId) as { count: number };
-  return result.count;
+): Promise<number> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(items)
+    .where(and(eq(items.parentLocationId, locationId), eq(items.userId, userId)));
+
+  return Number(result?.count ?? 0);
 }
 
 /**
  * Get the full path to an item, including location ancestors and item ancestors
  */
-export function getItemPath(
+export async function getItemPath(
   id: string,
   userId: string
-): { locations: Location[]; items: Item[] } | undefined {
-  const item = getItemById(id, userId);
+): Promise<{ locations: Location[]; items: Item[] } | undefined> {
+  const item = await getItemById(id, userId);
   if (!item) return undefined;
 
-  const items: Item[] = [item];
-  let current: Item | undefined = item;
+  // Use recursive CTE to get all item ancestors
+  const result = await db.execute(sql`
+    WITH RECURSIVE item_path AS (
+      SELECT * FROM items WHERE id = ${id} AND user_id = ${userId}
+      UNION ALL
+      SELECT i.* FROM items i
+      INNER JOIN item_path ip ON i.id = ip.parent_item_id
+    )
+    SELECT * FROM item_path
+  `);
 
-  // Walk up item hierarchy
-  while (current && current.parentItemId) {
-    const parent = getItemById(current.parentItemId, userId);
-    if (parent) {
-      items.unshift(parent);
-      current = parent;
-    } else {
-      break;
-    }
-  }
+  // Convert rows to Items (reverse to get root-to-leaf order)
+  const itemRows = (result.rows as any[]).reverse();
+  const itemPath: Item[] = itemRows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    name: row.name,
+    description: row.description,
+    parentLocationId: row.parent_location_id,
+    parentItemId: row.parent_item_id,
+    photos: row.photos,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at,
+    updatedAt:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : row.updated_at,
+  })) as Item[];
 
   // Get location path from the root item's parent location
-  const rootItem = items[0]!; // Safe: we always have at least one item
-  let locations: Location[] = [];
+  const rootItem = itemPath[0];
+  let locationPath: Location[] = [];
 
-  if (rootItem.parentLocationId) {
-    locations = getLocationPath(rootItem.parentLocationId, userId);
+  if (rootItem?.parentLocationId) {
+    locationPath = await getLocationPath(rootItem.parentLocationId, userId);
   }
 
-  return { locations, items };
+  return { locations: locationPath, items: itemPath };
 }
 
 /**
  * Generate human-readable code for an item based on its location path
  */
-export function getItemHumanReadableCode(
+export async function getItemHumanReadableCode(
   id: string,
   userId: string
-): string | undefined {
-  const path = getItemPath(id, userId);
+): Promise<string | undefined> {
+  const path = await getItemPath(id, userId);
   if (!path) return undefined;
 
   const locationCodes = path.locations.map((loc) => loc.code).join("-");
-  const item = path.items[path.items.length - 1]!; // Safe: path always has at least the item
+  const item = path.items[path.items.length - 1];
 
   // Use first 8 chars of UUID for the item identifier
-  const itemShortId = item.id.substring(0, 8).toUpperCase();
+  const itemShortId = item?.id.substring(0, 8).toUpperCase() ?? "";
 
   return locationCodes ? `${locationCodes}-${itemShortId}` : itemShortId;
 }
 
-export function getItemWithLocation(
+export async function getItemWithLocation(
   id: string,
   userId: string
-): ItemWithLocation | undefined {
-  const item = getItemById(id, userId);
+): Promise<ItemWithLocation | undefined> {
+  const item = await getItemById(id, userId);
   if (!item) return undefined;
 
-  const path = getItemPath(id, userId);
+  const path = await getItemPath(id, userId);
   if (!path) return undefined;
 
-  const humanReadableCode = getItemHumanReadableCode(id, userId) || id;
+  const humanReadableCode =
+    (await getItemHumanReadableCode(id, userId)) || id;
 
   // Container path is all parent items except the item itself
   const containerPath = path.items.slice(0, -1);
@@ -260,31 +280,32 @@ export function getItemWithLocation(
 /**
  * Search items by name and description
  */
-export function searchItems(
+export async function searchItems(
   query: string,
   userId: string,
   limit = 50
-): ItemWithLocation[] {
-  const db = getDb();
-
-  // Search both name and description
-  const stmt = db.prepare(`
-    SELECT * FROM items
-    WHERE user_id = ? AND (name LIKE ? OR description LIKE ?)
-    ORDER BY
-      CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
-      name
-    LIMIT ?
-  `);
-
+): Promise<ItemWithLocation[]> {
   const searchTerm = `%${query}%`;
-  const rows = stmt.all(userId, searchTerm, searchTerm, searchTerm, limit) as Record<string, unknown>[];
-  const items = rows.map((row) => toCamelCase<Item>(row));
+
+  const rows = await db
+    .select()
+    .from(items)
+    .where(
+      and(
+        eq(items.userId, userId),
+        or(ilike(items.name, searchTerm), ilike(items.description, searchTerm))
+      )
+    )
+    .orderBy(
+      sql`CASE WHEN ${items.name} ILIKE ${searchTerm} THEN 0 ELSE 1 END`,
+      items.name
+    )
+    .limit(limit);
 
   // Get full item details with location for each result
   const results: ItemWithLocation[] = [];
-  for (const item of items) {
-    const itemWithLocation = getItemWithLocation(item.id, userId);
+  for (const row of rows) {
+    const itemWithLocation = await getItemWithLocation(row.id, userId);
     if (itemWithLocation) {
       results.push(itemWithLocation);
     }
@@ -296,21 +317,17 @@ export function searchItems(
 /**
  * Get all containers for a user
  */
-export function getContainers(userId: string): ItemWithLocation[] {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM items
-    WHERE user_id = ? AND type = 'container'
-    ORDER BY name
-  `);
-
-  const rows = stmt.all(userId) as Record<string, unknown>[];
-  const items = rows.map((row) => toCamelCase<Item>(row));
+export async function getContainers(userId: string): Promise<ItemWithLocation[]> {
+  const rows = await db
+    .select()
+    .from(items)
+    .where(and(eq(items.userId, userId), eq(items.type, "container")))
+    .orderBy(items.name);
 
   // Get full details with location for each container
   const results: ItemWithLocation[] = [];
-  for (const item of items) {
-    const itemWithLocation = getItemWithLocation(item.id, userId);
+  for (const row of rows) {
+    const itemWithLocation = await getItemWithLocation(row.id, userId);
     if (itemWithLocation) {
       results.push(itemWithLocation);
     }
@@ -322,17 +339,17 @@ export function getContainers(userId: string): ItemWithLocation[] {
 /**
  * Move an item to a new parent (location or item)
  */
-export function moveItem(
+export async function moveItem(
   id: string,
   userId: string,
   newParent: { locationId: string } | { itemId: string }
-): Item | undefined {
-  const item = getItemById(id, userId);
+): Promise<Item | undefined> {
+  const item = await getItemById(id, userId);
   if (!item) return undefined;
 
   // Validate new parent exists
   if ("locationId" in newParent) {
-    const location = getLocationById(newParent.locationId, userId);
+    const location = await getLocationById(newParent.locationId, userId);
     if (!location) {
       throw new Error("Target location not found");
     }
@@ -341,7 +358,7 @@ export function moveItem(
       parentItemId: null,
     });
   } else {
-    const parentItem = getItemById(newParent.itemId, userId);
+    const parentItem = await getItemById(newParent.itemId, userId);
     if (!parentItem) {
       throw new Error("Target container not found");
     }
@@ -353,7 +370,7 @@ export function moveItem(
       throw new Error("Cannot move item into itself");
     }
     // Check if moving into a descendant
-    const path = getItemPath(newParent.itemId, userId);
+    const path = await getItemPath(newParent.itemId, userId);
     if (path?.items.some((i) => i.id === id)) {
       throw new Error("Cannot move item into its own descendant");
     }

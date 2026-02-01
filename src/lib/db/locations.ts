@@ -1,209 +1,220 @@
-import { v4 as uuid } from "uuid";
-import { getDb, toCamelCase } from "./client";
+import { eq, and, isNull, ne, sql } from "drizzle-orm";
+import { db, formatDateRequired } from "./drizzle-client";
+import { locations, items } from "./schema";
 import type { Location, NewLocation, LocationWithPath } from "@/types/domain";
 
-/**
- * Location database operations
- */
-
-export function createLocation(data: NewLocation): Location {
-  const db = getDb();
-  const id = data.id || uuid();
-  const now = new Date().toISOString();
-
-  const stmt = db.prepare(`
-    INSERT INTO locations (id, user_id, parent_id, name, description, code, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  stmt.run(
-    id,
-    data.userId,
-    data.parentId || null,
-    data.name,
-    data.description || null,
-    data.code.toUpperCase(),
-    now,
-    now
-  );
-
-  return getLocationById(id, data.userId)!;
+// Convert Drizzle location to domain Location type
+function toDomainLocation(row: typeof locations.$inferSelect): Location {
+  return {
+    id: row.id,
+    userId: row.userId,
+    parentId: row.parentId,
+    name: row.name,
+    description: row.description,
+    code: row.code,
+    createdAt: formatDateRequired(row.createdAt),
+    updatedAt: formatDateRequired(row.updatedAt),
+  };
 }
 
-export function getLocationById(
-  id: string,
-  userId: string
-): Location | undefined {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM locations WHERE id = ? AND user_id = ?
-  `);
+export async function createLocation(data: NewLocation): Promise<Location> {
+  const [row] = await db
+    .insert(locations)
+    .values({
+      id: data.id,
+      userId: data.userId,
+      parentId: data.parentId ?? null,
+      name: data.name,
+      description: data.description ?? null,
+      code: data.code.toUpperCase(),
+    })
+    .returning();
 
-  const row = stmt.get(id, userId) as Record<string, unknown> | undefined;
-  return row ? toCamelCase<Location>(row) : undefined;
-}
-
-export function getLocationsByUserId(userId: string): Location[] {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM locations WHERE user_id = ? ORDER BY name
-  `);
-
-  const rows = stmt.all(userId) as Record<string, unknown>[];
-  return rows.map((row) => toCamelCase<Location>(row));
-}
-
-export function getChildLocations(
-  parentId: string | null,
-  userId: string
-): Location[] {
-  const db = getDb();
-
-  if (parentId === null) {
-    const stmt = db.prepare(`
-      SELECT * FROM locations WHERE user_id = ? AND parent_id IS NULL ORDER BY name
-    `);
-    const rows = stmt.all(userId) as Record<string, unknown>[];
-    return rows.map((row) => toCamelCase<Location>(row));
+  if (!row) {
+    throw new Error("Failed to create location");
   }
 
-  const stmt = db.prepare(`
-    SELECT * FROM locations WHERE user_id = ? AND parent_id = ? ORDER BY name
-  `);
-  const rows = stmt.all(userId, parentId) as Record<string, unknown>[];
-  return rows.map((row) => toCamelCase<Location>(row));
+  return toDomainLocation(row);
 }
 
-export function updateLocation(
+export async function getLocationById(
+  id: string,
+  userId: string
+): Promise<Location | undefined> {
+  const [row] = await db
+    .select()
+    .from(locations)
+    .where(and(eq(locations.id, id), eq(locations.userId, userId)))
+    .limit(1);
+
+  return row ? toDomainLocation(row) : undefined;
+}
+
+export async function getLocationsByUserId(
+  userId: string
+): Promise<Location[]> {
+  const rows = await db
+    .select()
+    .from(locations)
+    .where(eq(locations.userId, userId))
+    .orderBy(locations.name);
+
+  return rows.map(toDomainLocation);
+}
+
+export async function getChildLocations(
+  parentId: string | null,
+  userId: string
+): Promise<Location[]> {
+  const condition =
+    parentId === null
+      ? and(eq(locations.userId, userId), isNull(locations.parentId))
+      : and(eq(locations.userId, userId), eq(locations.parentId, parentId));
+
+  const rows = await db
+    .select()
+    .from(locations)
+    .where(condition)
+    .orderBy(locations.name);
+
+  return rows.map(toDomainLocation);
+}
+
+export async function updateLocation(
   id: string,
   userId: string,
   data: Partial<NewLocation>
-): Location | undefined {
-  const db = getDb();
-  const now = new Date().toISOString();
-
-  const updates: string[] = [];
-  const values: unknown[] = [];
-
-  if (data.name !== undefined) {
-    updates.push("name = ?");
-    values.push(data.name);
-  }
-  if (data.description !== undefined) {
-    updates.push("description = ?");
-    values.push(data.description);
-  }
-  if (data.parentId !== undefined) {
-    updates.push("parent_id = ?");
-    values.push(data.parentId);
-  }
-  if (data.code !== undefined) {
-    updates.push("code = ?");
-    values.push(data.code.toUpperCase());
-  }
-
-  if (updates.length === 0) {
-    return getLocationById(id, userId);
-  }
-
-  updates.push("updated_at = ?");
-  values.push(now);
-  values.push(id);
-  values.push(userId);
-
-  const stmt = db.prepare(`
-    UPDATE locations SET ${updates.join(", ")} WHERE id = ? AND user_id = ?
-  `);
-  stmt.run(...values);
-
-  return getLocationById(id, userId);
-}
-
-export function deleteLocation(id: string, userId: string): boolean {
-  const db = getDb();
-
-  // Check for child locations
-  const childLocationStmt = db.prepare(`
-    SELECT COUNT(*) as count FROM locations WHERE parent_id = ? AND user_id = ?
-  `);
-  const childLocationResult = childLocationStmt.get(id, userId) as {
-    count: number;
+): Promise<Location | undefined> {
+  const updateData: Partial<typeof locations.$inferInsert> = {
+    updatedAt: new Date(),
   };
 
-  if (childLocationResult.count > 0) {
+  if (data.name !== undefined) {
+    updateData.name = data.name;
+  }
+  if (data.description !== undefined) {
+    updateData.description = data.description;
+  }
+  if (data.parentId !== undefined) {
+    updateData.parentId = data.parentId;
+  }
+  if (data.code !== undefined) {
+    updateData.code = data.code.toUpperCase();
+  }
+
+  const [row] = await db
+    .update(locations)
+    .set(updateData)
+    .where(and(eq(locations.id, id), eq(locations.userId, userId)))
+    .returning();
+
+  return row ? toDomainLocation(row) : undefined;
+}
+
+export async function deleteLocation(
+  id: string,
+  userId: string
+): Promise<boolean> {
+  // Check for child locations
+  const [childLocationResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(locations)
+    .where(and(eq(locations.parentId, id), eq(locations.userId, userId)));
+
+  const childLocationCount = Number(childLocationResult?.count ?? 0);
+  if (childLocationCount > 0) {
     throw new Error(
-      `Cannot delete location: has ${childLocationResult.count} child location(s)`
+      `Cannot delete location: has ${childLocationCount} child location(s)`
     );
   }
 
   // Check for child items
-  const childItemStmt = db.prepare(`
-    SELECT COUNT(*) as count FROM items WHERE parent_location_id = ? AND user_id = ?
-  `);
-  const childItemResult = childItemStmt.get(id, userId) as { count: number };
+  const [childItemResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(items)
+    .where(and(eq(items.parentLocationId, id), eq(items.userId, userId)));
 
-  if (childItemResult.count > 0) {
+  const childItemCount = Number(childItemResult?.count ?? 0);
+  if (childItemCount > 0) {
     throw new Error(
-      `Cannot delete location: has ${childItemResult.count} item(s)`
+      `Cannot delete location: has ${childItemCount} item(s)`
     );
   }
 
-  const stmt = db.prepare(`
-    DELETE FROM locations WHERE id = ? AND user_id = ?
-  `);
-  const result = stmt.run(id, userId);
-  return result.changes > 0;
+  const result = await db
+    .delete(locations)
+    .where(and(eq(locations.id, id), eq(locations.userId, userId)))
+    .returning();
+
+  return result.length > 0;
 }
 
-export function isCodeUnique(
+export async function isCodeUnique(
   code: string,
   userId: string,
   excludeId?: string
-): boolean {
-  const db = getDb();
+): Promise<boolean> {
+  const normalizedCode = code.toUpperCase();
 
-  if (excludeId) {
-    const stmt = db.prepare(`
-      SELECT COUNT(*) as count FROM locations
-      WHERE user_id = ? AND code = ? AND id != ?
-    `);
-    const result = stmt.get(userId, code.toUpperCase(), excludeId) as {
-      count: number;
-    };
-    return result.count === 0;
-  }
+  const conditions = excludeId
+    ? and(
+        eq(locations.userId, userId),
+        eq(locations.code, normalizedCode),
+        ne(locations.id, excludeId)
+      )
+    : and(eq(locations.userId, userId), eq(locations.code, normalizedCode));
 
-  const stmt = db.prepare(`
-    SELECT COUNT(*) as count FROM locations WHERE user_id = ? AND code = ?
-  `);
-  const result = stmt.get(userId, code.toUpperCase()) as { count: number };
-  return result.count === 0;
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(locations)
+    .where(conditions);
+
+  return Number(result?.count ?? 0) === 0;
 }
 
-export function getLocationPath(id: string, userId: string): Location[] {
-  const path: Location[] = [];
-  let current = getLocationById(id, userId);
-
-  while (current) {
-    path.unshift(current);
-    if (current.parentId) {
-      current = getLocationById(current.parentId, userId);
-    } else {
-      break;
-    }
-  }
-
-  return path;
-}
-
-export function getLocationWithPath(
+// Recursive path query using PostgreSQL CTE
+export async function getLocationPath(
   id: string,
   userId: string
-): LocationWithPath | undefined {
-  const location = getLocationById(id, userId);
+): Promise<Location[]> {
+  const result = await db.execute(sql`
+    WITH RECURSIVE path AS (
+      SELECT * FROM locations WHERE id = ${id} AND user_id = ${userId}
+      UNION ALL
+      SELECT l.* FROM locations l
+      INNER JOIN path p ON l.id = p.parent_id
+    )
+    SELECT * FROM path
+  `);
+
+  // Reverse to get root-to-leaf order, then convert to domain type
+  const rows = (result.rows as any[]).reverse();
+  return rows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    parentId: row.parent_id,
+    name: row.name,
+    description: row.description,
+    code: row.code,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at,
+    updatedAt:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : row.updated_at,
+  }));
+}
+
+export async function getLocationWithPath(
+  id: string,
+  userId: string
+): Promise<LocationWithPath | undefined> {
+  const location = await getLocationById(id, userId);
   if (!location) return undefined;
 
-  const path = getLocationPath(id, userId);
+  const path = await getLocationPath(id, userId);
   return {
     ...location,
     path,
@@ -211,24 +222,22 @@ export function getLocationWithPath(
   };
 }
 
-export function getLocationChildCounts(
+export async function getLocationChildCounts(
   id: string,
   userId: string
-): { locations: number; items: number } {
-  const db = getDb();
+): Promise<{ locations: number; items: number }> {
+  const [locationResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(locations)
+    .where(and(eq(locations.parentId, id), eq(locations.userId, userId)));
 
-  const locationStmt = db.prepare(`
-    SELECT COUNT(*) as count FROM locations WHERE parent_id = ? AND user_id = ?
-  `);
-  const locationResult = locationStmt.get(id, userId) as { count: number };
-
-  const itemStmt = db.prepare(`
-    SELECT COUNT(*) as count FROM items WHERE parent_location_id = ? AND user_id = ?
-  `);
-  const itemResult = itemStmt.get(id, userId) as { count: number };
+  const [itemResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(items)
+    .where(and(eq(items.parentLocationId, id), eq(items.userId, userId)));
 
   return {
-    locations: locationResult.count,
-    items: itemResult.count,
+    locations: Number(locationResult?.count ?? 0),
+    items: Number(itemResult?.count ?? 0),
   };
 }

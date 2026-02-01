@@ -16,7 +16,7 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
   }
 
   // Check if item exists
-  const item = getItemById(uuid, session.user.id);
+  const item = await getItemById(uuid, session.user.id);
 
   if (item) {
     // Known item - redirect to detail view

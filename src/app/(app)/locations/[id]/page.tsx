@@ -15,7 +15,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
     redirect("/login");
   }
 
-  const location = getLocationWithPath(id, session.user.id);
+  const location = await getLocationWithPath(id, session.user.id);
 
   if (!location) {
     notFound();

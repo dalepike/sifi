@@ -1,156 +1,189 @@
-import { getDb, toCamelCase } from "./client";
+import { eq, and, sql } from "drizzle-orm";
+import { db, formatDateRequired } from "./drizzle-client";
+import { itemAttachments, items } from "./schema";
 import type { Attachment, NewAttachment, AttachmentMeta } from "@/types/domain";
 import { randomUUID } from "crypto";
 
-/**
- * Item attachment database operations
- */
-
-export function createAttachment(data: NewAttachment): Attachment {
-  const db = getDb();
-  const id = randomUUID();
-  const now = new Date().toISOString();
-
-  // Get the next sort_order for this item
-  const maxOrderStmt = db.prepare(`
-    SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order
-    FROM item_attachments WHERE item_id = ?
-  `);
-  const { next_order } = maxOrderStmt.get(data.itemId) as { next_order: number };
-
-  const stmt = db.prepare(`
-    INSERT INTO item_attachments (
-      id, item_id, user_id, title, filename, mime_type, data, size_bytes, sort_order, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  stmt.run(
-    id,
-    data.itemId,
-    data.userId,
-    data.title,
-    data.filename,
-    data.mimeType,
-    data.data,
-    data.sizeBytes,
-    next_order,
-    now,
-    now
-  );
-
+// Convert Drizzle attachment to domain Attachment type
+function toDomainAttachment(row: typeof itemAttachments.$inferSelect): Attachment {
   return {
-    id,
-    itemId: data.itemId,
-    userId: data.userId,
-    title: data.title,
-    filename: data.filename,
-    mimeType: data.mimeType,
-    data: data.data,
-    sizeBytes: data.sizeBytes,
-    sortOrder: next_order,
-    createdAt: now,
-    updatedAt: now,
+    id: row.id,
+    itemId: row.itemId,
+    userId: row.userId,
+    title: row.title,
+    filename: row.filename,
+    mimeType: row.mimeType,
+    data: row.data,
+    sizeBytes: row.sizeBytes,
+    sortOrder: row.sortOrder ?? 0,
+    createdAt: formatDateRequired(row.createdAt),
+    updatedAt: formatDateRequired(row.updatedAt),
   };
 }
 
-export function getAttachmentById(
-  id: string,
-  userId: string
-): Attachment | undefined {
-  const db = getDb();
+export async function createAttachment(
+  data: NewAttachment
+): Promise<Attachment> {
+  const id = randomUUID();
 
-  const stmt = db.prepare(`
-    SELECT a.* FROM item_attachments a
-    JOIN items i ON a.item_id = i.id
-    WHERE a.id = ? AND i.user_id = ?
-  `);
+  // Get the next sort_order for this item
+  const [maxOrderResult] = await db
+    .select({
+      nextOrder: sql<number>`COALESCE(MAX(${itemAttachments.sortOrder}), -1) + 1`,
+    })
+    .from(itemAttachments)
+    .where(eq(itemAttachments.itemId, data.itemId));
 
-  const row = stmt.get(id, userId) as Record<string, unknown> | undefined;
-  if (!row) return undefined;
+  const nextOrder = Number(maxOrderResult?.nextOrder ?? 0);
 
-  return toCamelCase<Attachment>(row);
+  const [row] = await db
+    .insert(itemAttachments)
+    .values({
+      id,
+      itemId: data.itemId,
+      userId: data.userId,
+      title: data.title,
+      filename: data.filename,
+      mimeType: data.mimeType,
+      data: data.data,
+      sizeBytes: data.sizeBytes,
+      sortOrder: nextOrder,
+    })
+    .returning();
+
+  if (!row) {
+    throw new Error("Failed to create attachment");
+  }
+
+  return toDomainAttachment(row);
 }
 
-export function getAttachmentsForItem(
+export async function getAttachmentById(
+  id: string,
+  userId: string
+): Promise<Attachment | undefined> {
+  const result = await db.execute(sql`
+    SELECT a.* FROM item_attachments a
+    JOIN items i ON a.item_id = i.id
+    WHERE a.id = ${id} AND i.user_id = ${userId}
+  `);
+
+  const row = result.rows[0] as any;
+  if (!row) return undefined;
+
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    userId: row.user_id,
+    title: row.title,
+    filename: row.filename,
+    mimeType: row.mime_type,
+    data: row.data,
+    sizeBytes: row.size_bytes,
+    sortOrder: row.sort_order ?? 0,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at,
+    updatedAt:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : row.updated_at,
+  };
+}
+
+export async function getAttachmentsForItem(
   itemId: string,
   userId: string
-): AttachmentMeta[] {
-  const db = getDb();
-
+): Promise<AttachmentMeta[]> {
   // Return metadata only (without data field) for list display
-  const stmt = db.prepare(`
+  const result = await db.execute(sql`
     SELECT a.id, a.item_id, a.title, a.filename, a.mime_type, a.size_bytes, a.sort_order, a.created_at
     FROM item_attachments a
     JOIN items i ON a.item_id = i.id
-    WHERE a.item_id = ? AND i.user_id = ?
+    WHERE a.item_id = ${itemId} AND i.user_id = ${userId}
     ORDER BY a.sort_order ASC
   `);
 
-  const rows = stmt.all(itemId, userId) as Record<string, unknown>[];
-  return rows.map((row) => toCamelCase<AttachmentMeta>(row));
+  return (result.rows as any[]).map((row) => ({
+    id: row.id,
+    itemId: row.item_id,
+    title: row.title,
+    filename: row.filename,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    sortOrder: row.sort_order ?? 0,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at,
+  }));
 }
 
-export function updateAttachment(
+export async function updateAttachment(
   id: string,
   userId: string,
   data: { title?: string }
-): Attachment | undefined {
-  const db = getDb();
-  const now = new Date().toISOString();
-
+): Promise<Attachment | undefined> {
   // Verify ownership through item
-  const existing = getAttachmentById(id, userId);
+  const existing = await getAttachmentById(id, userId);
   if (!existing) return undefined;
 
   if (data.title !== undefined) {
-    const stmt = db.prepare(`
-      UPDATE item_attachments SET title = ?, updated_at = ? WHERE id = ?
-    `);
-    stmt.run(data.title, now, id);
+    await db
+      .update(itemAttachments)
+      .set({ title: data.title, updatedAt: new Date() })
+      .where(eq(itemAttachments.id, id));
   }
 
   return getAttachmentById(id, userId);
 }
 
-export function deleteAttachment(id: string, userId: string): boolean {
-  const db = getDb();
-
+export async function deleteAttachment(
+  id: string,
+  userId: string
+): Promise<boolean> {
   // Verify ownership through item
-  const existing = getAttachmentById(id, userId);
+  const existing = await getAttachmentById(id, userId);
   if (!existing) return false;
 
-  const stmt = db.prepare(`DELETE FROM item_attachments WHERE id = ?`);
-  const result = stmt.run(id);
-  return result.changes > 0;
+  const result = await db
+    .delete(itemAttachments)
+    .where(eq(itemAttachments.id, id))
+    .returning();
+
+  return result.length > 0;
 }
 
-export function reorderAttachments(
+export async function reorderAttachments(
   itemId: string,
   userId: string,
   orderedIds: string[]
-): boolean {
-  const db = getDb();
-
+): Promise<boolean> {
   // Verify item ownership
-  const itemCheck = db.prepare(`SELECT id FROM items WHERE id = ? AND user_id = ?`);
-  const item = itemCheck.get(itemId, userId);
+  const [item] = await db
+    .select({ id: items.id })
+    .from(items)
+    .where(and(eq(items.id, itemId), eq(items.userId, userId)))
+    .limit(1);
+
   if (!item) return false;
 
-  const now = new Date().toISOString();
-
   // Update sort_order for each attachment
-  const updateStmt = db.prepare(`
-    UPDATE item_attachments
-    SET sort_order = ?, updated_at = ?
-    WHERE id = ? AND item_id = ?
-  `);
+  for (let index = 0; index < orderedIds.length; index++) {
+    const attachmentId = orderedIds[index];
+    if (attachmentId) {
+      await db
+        .update(itemAttachments)
+        .set({ sortOrder: index, updatedAt: new Date() })
+        .where(
+          and(
+            eq(itemAttachments.id, attachmentId),
+            eq(itemAttachments.itemId, itemId)
+          )
+        );
+    }
+  }
 
-  const transaction = db.transaction(() => {
-    orderedIds.forEach((attachmentId, index) => {
-      updateStmt.run(index, now, attachmentId, itemId);
-    });
-  });
-
-  transaction();
   return true;
 }

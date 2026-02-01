@@ -15,7 +15,7 @@ export default async function ItemPage({ params }: ItemPageProps) {
     redirect("/login");
   }
 
-  const item = getItemWithLocation(id, session.user.id);
+  const item = await getItemWithLocation(id, session.user.id);
 
   if (!item) {
     notFound();

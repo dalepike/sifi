@@ -28,7 +28,7 @@ export async function addTagToItem(
   }
 
   try {
-    const result = dbAddTagToItem(itemId, tagId, userId);
+    const result = await dbAddTagToItem(itemId, tagId, userId);
     if (!result) {
       return { success: false, error: "Item or tag not found" };
     }
@@ -55,7 +55,7 @@ export async function removeTagFromItem(
   }
 
   try {
-    const removed = dbRemoveTagFromItem(itemId, tagId, userId);
+    const removed = await dbRemoveTagFromItem(itemId, tagId, userId);
     if (!removed) {
       return { success: false, error: "Could not remove tag from item" };
     }
@@ -81,7 +81,7 @@ export async function getItemTags(
   }
 
   try {
-    const tags = dbGetTagsForItem(itemId, userId);
+    const tags = await dbGetTagsForItem(itemId, userId);
     return { success: true, data: tags };
   } catch (error) {
     console.error("Get item tags error:", error);

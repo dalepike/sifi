@@ -25,7 +25,7 @@ export async function getItemQRCode(
   }
 
   // Verify item exists and belongs to user
-  const item = getItemById(itemId, userId);
+  const item = await getItemById(itemId, userId);
   if (!item) {
     return { success: false, error: "Item not found" };
   }
@@ -64,7 +64,7 @@ export async function getItemsQRCodes(
     const results = await Promise.all(
       itemIds.map(async (itemId) => {
         // Verify item exists and belongs to user
-        const item = getItemById(itemId, userId);
+        const item = await getItemById(itemId, userId);
         if (!item) {
           return null;
         }

@@ -1,133 +1,127 @@
-import { v4 as uuid } from "uuid";
-import { getDb, toCamelCase } from "./client";
+import { eq, and, sql } from "drizzle-orm";
+import { db, formatDateRequired } from "./drizzle-client";
+import { activities, activityItems } from "./schema";
 import type { Activity, NewActivity } from "@/types/domain";
 
-/**
- * Activity database operations
- * Activities represent hobbies/crafts (e.g., pottery, sewing, woodworking)
- */
-
-export function createActivity(data: NewActivity): Activity {
-  const db = getDb();
-  const id = data.id || uuid();
-  const now = new Date().toISOString();
-
-  const stmt = db.prepare(`
-    INSERT INTO activities (id, user_id, name, description, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  stmt.run(
-    id,
-    data.userId,
-    data.name,
-    data.description || null,
-    data.status || "active",
-    now,
-    now
-  );
-
-  return getActivityById(id, data.userId)!;
+// Convert Drizzle activity to domain Activity type
+function toDomainActivity(row: typeof activities.$inferSelect): Activity {
+  return {
+    id: row.id,
+    userId: row.userId,
+    name: row.name,
+    description: row.description,
+    status: row.status ?? "active",
+    createdAt: formatDateRequired(row.createdAt),
+    updatedAt: formatDateRequired(row.updatedAt),
+  };
 }
 
-export function getActivityById(
-  id: string,
-  userId: string
-): Activity | undefined {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT * FROM activities WHERE id = ? AND user_id = ?
-  `);
+export async function createActivity(data: NewActivity): Promise<Activity> {
+  const [row] = await db
+    .insert(activities)
+    .values({
+      id: data.id,
+      userId: data.userId,
+      name: data.name,
+      description: data.description ?? null,
+      status: data.status ?? "active",
+    })
+    .returning();
 
-  const row = stmt.get(id, userId) as Record<string, unknown> | undefined;
-  return row ? toCamelCase<Activity>(row) : undefined;
-}
-
-export function getActivitiesByUserId(
-  userId: string,
-  status?: "active" | "archived"
-): Activity[] {
-  const db = getDb();
-
-  let query = `
-    SELECT * FROM activities WHERE user_id = ?
-  `;
-
-  const params: unknown[] = [userId];
-
-  if (status) {
-    query += " AND status = ?";
-    params.push(status);
+  if (!row) {
+    throw new Error("Failed to create activity");
   }
 
-  query += " ORDER BY name";
-
-  const stmt = db.prepare(query);
-  const rows = stmt.all(...params) as Record<string, unknown>[];
-
-  return rows.map((row) => toCamelCase<Activity>(row));
+  return toDomainActivity(row);
 }
 
-export function updateActivity(
+export async function getActivityById(
+  id: string,
+  userId: string
+): Promise<Activity | undefined> {
+  const [row] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.id, id), eq(activities.userId, userId)))
+    .limit(1);
+
+  return row ? toDomainActivity(row) : undefined;
+}
+
+export async function getActivitiesByUserId(
+  userId: string,
+  status?: "active" | "archived"
+): Promise<Activity[]> {
+  const conditions = status
+    ? and(eq(activities.userId, userId), eq(activities.status, status))
+    : eq(activities.userId, userId);
+
+  const rows = await db
+    .select()
+    .from(activities)
+    .where(conditions)
+    .orderBy(activities.name);
+
+  return rows.map(toDomainActivity);
+}
+
+export async function updateActivity(
   id: string,
   userId: string,
   data: Partial<NewActivity>
-): Activity | undefined {
-  const db = getDb();
-  const now = new Date().toISOString();
-
-  const updates: string[] = [];
-  const values: unknown[] = [];
+): Promise<Activity | undefined> {
+  const updateData: Partial<typeof activities.$inferInsert> = {
+    updatedAt: new Date(),
+  };
 
   if (data.name !== undefined) {
-    updates.push("name = ?");
-    values.push(data.name);
+    updateData.name = data.name;
   }
   if (data.description !== undefined) {
-    updates.push("description = ?");
-    values.push(data.description);
+    updateData.description = data.description;
   }
   if (data.status !== undefined) {
-    updates.push("status = ?");
-    values.push(data.status);
+    updateData.status = data.status;
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 1) {
+    // Only updatedAt, no actual changes
     return getActivityById(id, userId);
   }
 
-  updates.push("updated_at = ?");
-  values.push(now);
-  values.push(id);
-  values.push(userId);
+  const [row] = await db
+    .update(activities)
+    .set(updateData)
+    .where(and(eq(activities.id, id), eq(activities.userId, userId)))
+    .returning();
 
-  const stmt = db.prepare(`
-    UPDATE activities SET ${updates.join(", ")} WHERE id = ? AND user_id = ?
-  `);
-  stmt.run(...values);
-
-  return getActivityById(id, userId);
+  return row ? toDomainActivity(row) : undefined;
 }
 
-export function deleteActivity(id: string, userId: string): boolean {
-  const db = getDb();
-
+export async function deleteActivity(
+  id: string,
+  userId: string
+): Promise<boolean> {
   // Activity-item relationships will be cascade deleted
-  const stmt = db.prepare(`
-    DELETE FROM activities WHERE id = ? AND user_id = ?
-  `);
-  const result = stmt.run(id, userId);
-  return result.changes > 0;
+  const result = await db
+    .delete(activities)
+    .where(and(eq(activities.id, id), eq(activities.userId, userId)))
+    .returning();
+
+  return result.length > 0;
 }
 
-export function getActivityItemCount(id: string, userId: string): number {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT COUNT(*) as count
-    FROM activity_items ai
-    JOIN activities a ON ai.activity_id = a.id
-    WHERE ai.activity_id = ? AND a.user_id = ?
-  `);
-  const result = stmt.get(id, userId) as { count: number };
-  return result.count;
+export async function getActivityItemCount(
+  id: string,
+  userId: string
+): Promise<number> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(activityItems)
+    .innerJoin(activities, eq(activityItems.activityId, activities.id))
+    .where(
+      and(eq(activityItems.activityId, id), eq(activities.userId, userId))
+    );
+
+  return Number(result?.count ?? 0);
 }

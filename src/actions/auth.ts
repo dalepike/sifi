@@ -31,7 +31,7 @@ export async function register(formData: FormData): Promise<RegisterResult> {
   const { email, password, name } = parsed.data;
 
   // Check email uniqueness
-  if (!isEmailUnique(email)) {
+  if (!(await isEmailUnique(email))) {
     return {
       success: false,
       error: "An account with this email already exists",
@@ -39,7 +39,7 @@ export async function register(formData: FormData): Promise<RegisterResult> {
   }
 
   try {
-    const user = createUser({
+    const user = await createUser({
       email,
       password,
       name: name || null,

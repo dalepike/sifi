@@ -62,7 +62,7 @@ export async function createAttachment(
   }
 
   try {
-    const attachment = dbCreateAttachment({
+    const attachment = await dbCreateAttachment({
       ...parsed.data,
       userId,
     });
@@ -87,7 +87,7 @@ export async function getAttachmentsForItem(
   }
 
   try {
-    const attachments = dbGetAttachmentsForItem(itemId, userId);
+    const attachments = await dbGetAttachmentsForItem(itemId, userId);
     return { success: true, data: attachments };
   } catch (error) {
     console.error("Get attachments error:", error);
@@ -107,7 +107,7 @@ export async function getAttachmentData(
   }
 
   try {
-    const attachment = dbGetAttachmentById(id, userId);
+    const attachment = await dbGetAttachmentById(id, userId);
     if (!attachment) {
       return { success: false, error: "Attachment not found" };
     }
@@ -135,7 +135,7 @@ export async function updateAttachment(
   }
 
   try {
-    const attachment = dbUpdateAttachment(parsed.data.id, userId, {
+    const attachment = await dbUpdateAttachment(parsed.data.id, userId, {
       title: parsed.data.title,
     });
 
@@ -164,12 +164,12 @@ export async function deleteAttachment(
 
   try {
     // Get the attachment first to know the item ID for revalidation
-    const attachment = dbGetAttachmentById(id, userId);
+    const attachment = await dbGetAttachmentById(id, userId);
     if (!attachment) {
       return { success: false, error: "Attachment not found" };
     }
 
-    const deleted = dbDeleteAttachment(id, userId);
+    const deleted = await dbDeleteAttachment(id, userId);
     if (!deleted) {
       return { success: false, error: "Could not delete attachment" };
     }
@@ -199,7 +199,7 @@ export async function reorderAttachments(
   }
 
   try {
-    const reordered = dbReorderAttachments(
+    const reordered = await dbReorderAttachments(
       parsed.data.itemId,
       userId,
       parsed.data.orderedIds

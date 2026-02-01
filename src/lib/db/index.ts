@@ -1,5 +1,8 @@
 // Database exports
-export { getDb, closeDb, toCamelCase, toSnakeCase } from "./client";
+export { db, formatDateRequired, formatDateOptional } from "./drizzle-client";
+
+// Schema
+export * from "./schema";
 
 // Users
 export {

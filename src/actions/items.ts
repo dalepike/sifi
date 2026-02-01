@@ -88,14 +88,14 @@ export async function createItem(
 
   // Validate parent exists and belongs to user
   if (parentLocationId) {
-    const location = getLocationById(parentLocationId, userId);
+    const location = await getLocationById(parentLocationId, userId);
     if (!location) {
       return { success: false, error: "Parent location not found" };
     }
   }
 
   if (parentItemId) {
-    const parentItem = dbGetItemById(parentItemId, userId);
+    const parentItem = await dbGetItemById(parentItemId, userId);
     if (!parentItem) {
       return { success: false, error: "Parent container not found" };
     }
@@ -105,7 +105,7 @@ export async function createItem(
   }
 
   try {
-    const item = dbCreateItem({
+    const item = await dbCreateItem({
       id,
       userId,
       name,
@@ -154,14 +154,14 @@ export async function updateItem(
   const { id, name, description, type, photos } = parsed.data;
 
   // Verify item exists and belongs to user
-  const existing = dbGetItemById(id, userId);
+  const existing = await dbGetItemById(id, userId);
   if (!existing) {
     return { success: false, error: "Item not found" };
   }
 
   // If changing type from container to object, check for children
   if (type === "object" && existing.type === "container") {
-    const childCount = getItemChildCount(id, userId);
+    const childCount = await getItemChildCount(id, userId);
     if (childCount > 0) {
       return {
         success: false,
@@ -171,7 +171,7 @@ export async function updateItem(
   }
 
   try {
-    const item = dbUpdateItem(id, userId, {
+    const item = await dbUpdateItem(id, userId, {
       name,
       description: description !== undefined ? description || null : undefined,
       type,
@@ -202,13 +202,13 @@ export async function deleteItem(
   }
 
   // Verify item exists and belongs to user
-  const existing = dbGetItemById(id, userId);
+  const existing = await dbGetItemById(id, userId);
   if (!existing) {
     return { success: false, error: "Item not found" };
   }
 
   try {
-    const deleted = dbDeleteItem(id, userId);
+    const deleted = await dbDeleteItem(id, userId);
     revalidatePath("/locations");
     return { success: true, data: { deleted } };
   } catch (error) {
@@ -230,7 +230,7 @@ export async function getItem(
     return { success: false, error: "You must be logged in" };
   }
 
-  const item = getItemWithLocation(id, userId);
+  const item = await getItemWithLocation(id, userId);
   if (!item) {
     return { success: false, error: "Item not found" };
   }
@@ -246,7 +246,7 @@ export async function getItemsInLocation(
     return { success: false, error: "You must be logged in" };
   }
 
-  const items = getItemsByLocationId(locationId, userId);
+  const items = await getItemsByLocationId(locationId, userId);
   return { success: true, data: items };
 }
 
@@ -258,7 +258,7 @@ export async function getItemsInContainer(
     return { success: false, error: "You must be logged in" };
   }
 
-  const items = getItemsByParentItemId(containerId, userId);
+  const items = await getItemsByParentItemId(containerId, userId);
   return { success: true, data: items };
 }
 
@@ -272,7 +272,7 @@ export async function moveItem(
   }
 
   try {
-    const item = dbMoveItem(id, userId, target);
+    const item = await dbMoveItem(id, userId, target);
     if (!item) {
       return { success: false, error: "Item not found" };
     }
@@ -302,7 +302,7 @@ export async function searchItems(
     return { success: true, data: [] };
   }
 
-  const items = dbSearchItems(query, userId);
+  const items = await dbSearchItems(query, userId);
   return { success: true, data: items };
 }
 
@@ -312,6 +312,6 @@ export async function getContainers(): Promise<ActionResult<ItemWithLocation[]>>
     return { success: false, error: "You must be logged in" };
   }
 
-  const containers = dbGetContainers(userId);
+  const containers = await dbGetContainers(userId);
   return { success: true, data: containers };
 }

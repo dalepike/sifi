@@ -60,7 +60,7 @@ export async function createActivity(
   const { name, description, status } = parsed.data;
 
   try {
-    const activity = dbCreateActivity({
+    const activity = await dbCreateActivity({
       userId,
       name,
       description: description || null,
@@ -104,13 +104,13 @@ export async function updateActivity(
   const { id, name, description, status } = parsed.data;
 
   // Verify activity exists and belongs to user
-  const existing = dbGetActivityById(id, userId);
+  const existing = await dbGetActivityById(id, userId);
   if (!existing) {
     return { success: false, error: "Activity not found" };
   }
 
   try {
-    const activity = dbUpdateActivity(id, userId, {
+    const activity = await dbUpdateActivity(id, userId, {
       name,
       description: description !== undefined ? description || null : undefined,
       status,
@@ -140,13 +140,13 @@ export async function deleteActivity(
   }
 
   // Verify activity exists and belongs to user
-  const existing = dbGetActivityById(id, userId);
+  const existing = await dbGetActivityById(id, userId);
   if (!existing) {
     return { success: false, error: "Activity not found" };
   }
 
   try {
-    const deleted = dbDeleteActivity(id, userId);
+    const deleted = await dbDeleteActivity(id, userId);
     revalidatePath("/activities");
     return { success: true, data: { deleted } };
   } catch (error) {
@@ -166,7 +166,7 @@ export async function getActivity(
     return { success: false, error: "You must be logged in" };
   }
 
-  const activity = dbGetActivityById(id, userId);
+  const activity = await dbGetActivityById(id, userId);
   if (!activity) {
     return { success: false, error: "Activity not found" };
   }
@@ -182,7 +182,7 @@ export async function getActivities(
     return { success: false, error: "You must be logged in" };
   }
 
-  const activities = getActivitiesByUserId(userId, status);
+  const activities = await getActivitiesByUserId(userId, status);
   return { success: true, data: activities };
 }
 
@@ -194,12 +194,12 @@ export async function getActivityWithItemCount(
     return { success: false, error: "You must be logged in" };
   }
 
-  const activity = dbGetActivityById(id, userId);
+  const activity = await dbGetActivityById(id, userId);
   if (!activity) {
     return { success: false, error: "Activity not found" };
   }
 
-  const itemCount = getActivityItemCount(id, userId);
+  const itemCount = await getActivityItemCount(id, userId);
 
   return { success: true, data: { ...activity, itemCount } };
 }
@@ -212,13 +212,13 @@ export async function archiveActivity(
     return { success: false, error: "You must be logged in" };
   }
 
-  const existing = dbGetActivityById(id, userId);
+  const existing = await dbGetActivityById(id, userId);
   if (!existing) {
     return { success: false, error: "Activity not found" };
   }
 
   try {
-    const activity = dbUpdateActivity(id, userId, { status: "archived" });
+    const activity = await dbUpdateActivity(id, userId, { status: "archived" });
     if (!activity) {
       return { success: false, error: "Failed to archive activity" };
     }
@@ -242,13 +242,13 @@ export async function unarchiveActivity(
     return { success: false, error: "You must be logged in" };
   }
 
-  const existing = dbGetActivityById(id, userId);
+  const existing = await dbGetActivityById(id, userId);
   if (!existing) {
     return { success: false, error: "Activity not found" };
   }
 
   try {
-    const activity = dbUpdateActivity(id, userId, { status: "active" });
+    const activity = await dbUpdateActivity(id, userId, { status: "active" });
     if (!activity) {
       return { success: false, error: "Failed to unarchive activity" };
     }

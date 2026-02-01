@@ -67,7 +67,7 @@ export async function createTag(
   const { name, description, color } = parsed.data;
 
   try {
-    const tag = dbCreateTag({
+    const tag = await dbCreateTag({
       userId,
       name,
       description: description || null,
@@ -111,13 +111,13 @@ export async function updateTag(
   const { id, name, description, color } = parsed.data;
 
   // Verify tag exists and belongs to user
-  const existing = dbGetTagById(id, userId);
+  const existing = await dbGetTagById(id, userId);
   if (!existing) {
     return { success: false, error: "Tag not found" };
   }
 
   try {
-    const tag = dbUpdateTag(id, userId, {
+    const tag = await dbUpdateTag(id, userId, {
       name,
       description: description !== undefined ? description || null : undefined,
       color,
@@ -147,13 +147,13 @@ export async function deleteTag(
   }
 
   // Verify tag exists and belongs to user
-  const existing = dbGetTagById(id, userId);
+  const existing = await dbGetTagById(id, userId);
   if (!existing) {
     return { success: false, error: "Tag not found" };
   }
 
   try {
-    const deleted = dbDeleteTag(id, userId);
+    const deleted = await dbDeleteTag(id, userId);
     revalidatePath("/tags");
     return { success: true, data: { deleted } };
   } catch (error) {
@@ -171,7 +171,7 @@ export async function getTag(id: string): Promise<ActionResult<Tag>> {
     return { success: false, error: "You must be logged in" };
   }
 
-  const tag = dbGetTagById(id, userId);
+  const tag = await dbGetTagById(id, userId);
   if (!tag) {
     return { success: false, error: "Tag not found" };
   }
@@ -185,7 +185,7 @@ export async function getTags(): Promise<ActionResult<Tag[]>> {
     return { success: false, error: "You must be logged in" };
   }
 
-  const tags = getTagsByUserId(userId);
+  const tags = await getTagsByUserId(userId);
   return { success: true, data: tags };
 }
 
@@ -197,7 +197,7 @@ export async function getTagWithItemCount(
     return { success: false, error: "You must be logged in" };
   }
 
-  const tag = dbGetTagWithItemCount(id, userId);
+  const tag = await dbGetTagWithItemCount(id, userId);
   if (!tag) {
     return { success: false, error: "Tag not found" };
   }
@@ -211,7 +211,7 @@ export async function getTagsWithCounts(): Promise<ActionResult<TagWithItemCount
     return { success: false, error: "You must be logged in" };
   }
 
-  const tags = getTagsWithItemCounts(userId);
+  const tags = await getTagsWithItemCounts(userId);
   return { success: true, data: tags };
 }
 
@@ -224,11 +224,11 @@ export async function getTagItems(
   }
 
   // Verify tag exists
-  const tag = dbGetTagById(tagId, userId);
+  const tag = await dbGetTagById(tagId, userId);
   if (!tag) {
     return { success: false, error: "Tag not found" };
   }
 
-  const items = getItemsByTagId(tagId, userId);
+  const items = await getItemsByTagId(tagId, userId);
   return { success: true, data: items };
 }

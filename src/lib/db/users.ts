@@ -1,11 +1,10 @@
-import { v4 as uuid } from "uuid";
-import { getDb, toCamelCase } from "./client";
+import { eq, and, ne, sql } from "drizzle-orm";
+import { db, formatDateRequired } from "./drizzle-client";
+import { users } from "./schema";
 import type { User, NewUser } from "@/types/domain";
-
-// For password hashing, we'll use a simple approach
-// In production, use bcrypt or argon2
 import { createHash } from "crypto";
 
+// Password hashing (TODO: migrate to bcrypt for production)
 function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
 }
@@ -14,111 +13,132 @@ export function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
-export function createUser(
+// Convert Drizzle user to domain User type
+function toDomainUser(row: typeof users.$inferSelect): User {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    createdAt: formatDateRequired(row.createdAt),
+  };
+}
+
+export async function createUser(
   data: NewUser & { password: string }
-): Omit<User, "passwordHash"> {
-  const db = getDb();
-  const id = data.id || uuid();
-  const now = new Date().toISOString();
+): Promise<User> {
   const passwordHash = hashPassword(data.password);
 
-  const stmt = db.prepare(`
-    INSERT INTO users (id, email, name, password_hash, created_at)
-    VALUES (?, ?, ?, ?, ?)
-  `);
+  const [row] = await db
+    .insert(users)
+    .values({
+      id: data.id,
+      email: data.email.toLowerCase(),
+      name: data.name ?? null,
+      passwordHash,
+    })
+    .returning();
 
-  stmt.run(id, data.email.toLowerCase(), data.name || null, passwordHash, now);
+  if (!row) {
+    throw new Error("Failed to create user");
+  }
 
-  return getUserById(id)!;
+  return toDomainUser(row);
 }
 
-export function getUserById(id: string): User | undefined {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT id, email, name, created_at FROM users WHERE id = ?
-  `);
+export async function getUserById(id: string): Promise<User | undefined> {
+  const [row] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
 
-  const row = stmt.get(id) as Record<string, unknown> | undefined;
-  return row ? toCamelCase<User>(row) : undefined;
+  return row ? toDomainUser(row as typeof users.$inferSelect) : undefined;
 }
 
-export function getUserByEmail(email: string): User | undefined {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT id, email, name, created_at FROM users WHERE email = ?
-  `);
-
-  const row = stmt.get(email.toLowerCase()) as Record<string, unknown> | undefined;
-  return row ? toCamelCase<User>(row) : undefined;
-}
-
-export function getUserWithPasswordHash(
+export async function getUserByEmail(
   email: string
-): (User & { passwordHash: string }) | undefined {
-  const db = getDb();
-  const stmt = db.prepare(`
-    SELECT id, email, name, password_hash, created_at FROM users WHERE email = ?
-  `);
+): Promise<User | undefined> {
+  const [row] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.email, email.toLowerCase()))
+    .limit(1);
 
-  const row = stmt.get(email.toLowerCase()) as Record<string, unknown> | undefined;
-  return row ? toCamelCase<User & { passwordHash: string }>(row) : undefined;
+  return row ? toDomainUser(row as typeof users.$inferSelect) : undefined;
 }
 
-export function updateUser(
+export async function getUserWithPasswordHash(
+  email: string
+): Promise<(User & { passwordHash: string }) | undefined> {
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email.toLowerCase()))
+    .limit(1);
+
+  if (!row) return undefined;
+
+  return {
+    ...toDomainUser(row),
+    passwordHash: row.passwordHash,
+  };
+}
+
+export async function updateUser(
   id: string,
   data: Partial<Pick<User, "name" | "email">>
-): User | undefined {
-  const db = getDb();
-
-  const updates: string[] = [];
-  const values: unknown[] = [];
+): Promise<User | undefined> {
+  const updateData: Partial<typeof users.$inferInsert> = {};
 
   if (data.name !== undefined) {
-    updates.push("name = ?");
-    values.push(data.name);
+    updateData.name = data.name;
   }
   if (data.email !== undefined) {
-    updates.push("email = ?");
-    values.push(data.email.toLowerCase());
+    updateData.email = data.email.toLowerCase();
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 0) {
     return getUserById(id);
   }
 
-  values.push(id);
+  const [row] = await db
+    .update(users)
+    .set(updateData)
+    .where(eq(users.id, id))
+    .returning();
 
-  const stmt = db.prepare(`
-    UPDATE users SET ${updates.join(", ")} WHERE id = ?
-  `);
-  stmt.run(...values);
-
-  return getUserById(id);
+  return row ? toDomainUser(row) : undefined;
 }
 
-export function deleteUser(id: string): boolean {
-  const db = getDb();
-  const stmt = db.prepare(`DELETE FROM users WHERE id = ?`);
-  const result = stmt.run(id);
-  return result.changes > 0;
+export async function deleteUser(id: string): Promise<boolean> {
+  const result = await db.delete(users).where(eq(users.id, id)).returning();
+  return result.length > 0;
 }
 
-export function isEmailUnique(email: string, excludeId?: string): boolean {
-  const db = getDb();
+export async function isEmailUnique(
+  email: string,
+  excludeId?: string
+): Promise<boolean> {
+  const normalizedEmail = email.toLowerCase();
 
-  if (excludeId) {
-    const stmt = db.prepare(`
-      SELECT COUNT(*) as count FROM users WHERE email = ? AND id != ?
-    `);
-    const result = stmt.get(email.toLowerCase(), excludeId) as {
-      count: number;
-    };
-    return result.count === 0;
-  }
+  const conditions = excludeId
+    ? and(eq(users.email, normalizedEmail), ne(users.id, excludeId))
+    : eq(users.email, normalizedEmail);
 
-  const stmt = db.prepare(`
-    SELECT COUNT(*) as count FROM users WHERE email = ?
-  `);
-  const result = stmt.get(email.toLowerCase()) as { count: number };
-  return result.count === 0;
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(users)
+    .where(conditions);
+
+  return Number(result?.count ?? 0) === 0;
 }

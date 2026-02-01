@@ -29,7 +29,7 @@ export async function addItemToActivity(
   }
 
   try {
-    const result = dbAddItemToActivity(activityId, itemId, userId);
+    const result = await dbAddItemToActivity(activityId, itemId, userId);
     if (!result) {
       return { success: false, error: "Activity or item not found" };
     }
@@ -56,7 +56,7 @@ export async function removeItemFromActivity(
   }
 
   try {
-    const removed = dbRemoveItemFromActivity(activityId, itemId, userId);
+    const removed = await dbRemoveItemFromActivity(activityId, itemId, userId);
     if (!removed) {
       return { success: false, error: "Could not remove item from activity" };
     }
@@ -82,7 +82,7 @@ export async function getActivityItems(
   }
 
   try {
-    const items = dbGetItemsForActivity(activityId, userId);
+    const items = await dbGetItemsForActivity(activityId, userId);
     return { success: true, data: items };
   } catch (error) {
     console.error("Get activity items error:", error);
@@ -102,7 +102,7 @@ export async function getItemActivities(
   }
 
   try {
-    const activities = dbGetActivitiesForItem(itemId, userId);
+    const activities = await dbGetActivitiesForItem(itemId, userId);
     return { success: true, data: activities };
   } catch (error) {
     console.error("Get item activities error:", error);
