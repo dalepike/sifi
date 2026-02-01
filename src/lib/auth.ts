@@ -12,39 +12,37 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         try {
-          console.log("[auth] authorize called");
+          console.error("[auth] authorize called with email:", credentials?.email);
           if (!credentials?.email || !credentials?.password) {
-            console.log("[auth] missing credentials");
+            console.error("[auth] missing credentials");
             return null;
           }
 
           const email = credentials.email as string;
           const password = credentials.password as string;
-          console.log("[auth] looking up user:", email);
 
           const user = await getUserWithPasswordHash(email);
-          console.log("[auth] user found:", !!user, "email:", user?.email);
+          console.error("[auth] user lookup result:", !!user);
           if (!user) {
-            console.log("[auth] no user found for email");
+            console.error("[auth] USER NOT FOUND");
             return null;
           }
 
-          console.log("[auth] verifying password, hash length:", user.passwordHash?.length);
           const isValid = verifyPassword(password, user.passwordHash);
-          console.log("[auth] password valid:", isValid);
+          console.error("[auth] password check:", isValid);
           if (!isValid) {
-            console.log("[auth] password mismatch");
+            console.error("[auth] PASSWORD MISMATCH");
             return null;
           }
 
-          console.log("[auth] login success for:", user.email);
+          console.error("[auth] SUCCESS");
           return {
             id: user.id,
             email: user.email,
             name: user.name,
           };
         } catch (error) {
-          console.error("[auth] authorize error:", error);
+          console.error("[auth] EXCEPTION:", error);
           return null;
         }
       },
