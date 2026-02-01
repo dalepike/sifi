@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { Home } from "lucide-react";
 import {
@@ -53,35 +54,37 @@ export function LocationBreadcrumb({ path, onNavigate }: LocationBreadcrumbProps
           const isLast = index === path.length - 1;
 
           return (
-            <BreadcrumbItem key={location.id}>
+            <Fragment key={location.id}>
               <BreadcrumbSeparator />
-              {isLast ? (
-                <BreadcrumbPage className="flex items-center gap-1">
-                  <span className="font-mono text-xs">{location.code}</span>
-                  <span>{location.name}</span>
-                </BreadcrumbPage>
-              ) : onNavigate ? (
-                <BreadcrumbLink asChild>
-                  <button
-                    onClick={() => handleClick(location)}
-                    className="flex items-center gap-1"
-                  >
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage className="flex items-center gap-1">
                     <span className="font-mono text-xs">{location.code}</span>
                     <span>{location.name}</span>
-                  </button>
-                </BreadcrumbLink>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link
-                    href={`/locations/${location.id}`}
-                    className="flex items-center gap-1"
-                  >
-                    <span className="font-mono text-xs">{location.code}</span>
-                    <span>{location.name}</span>
-                  </Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+                  </BreadcrumbPage>
+                ) : onNavigate ? (
+                  <BreadcrumbLink asChild>
+                    <button
+                      onClick={() => handleClick(location)}
+                      className="flex items-center gap-1"
+                    >
+                      <span className="font-mono text-xs">{location.code}</span>
+                      <span>{location.name}</span>
+                    </button>
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={`/locations/${location.id}`}
+                      className="flex items-center gap-1"
+                    >
+                      <span className="font-mono text-xs">{location.code}</span>
+                      <span>{location.name}</span>
+                    </Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           );
         })}
       </BreadcrumbList>
