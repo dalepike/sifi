@@ -13,13 +13,13 @@ function getDatabaseUrl(): string {
 }
 
 // Create connection pool
+// Railway internal connections don't use SSL, external ones do
+const dbUrl = getDatabaseUrl();
+const isInternalRailway = dbUrl.includes(".railway.internal");
+
 const pool = new Pool({
-  connectionString: getDatabaseUrl(),
-  // Railway PostgreSQL has valid SSL certificates
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: true }
-      : false,
+  connectionString: dbUrl,
+  ssl: isInternalRailway ? false : (process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false),
 });
 
 // Log pool errors (don't crash on transient issues)
