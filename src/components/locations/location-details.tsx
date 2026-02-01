@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getLocation, getLocationChildren, deleteLocation } from "@/actions/locations";
+import { LocationBreadcrumb } from "./location-breadcrumb";
 import type { Location, LocationWithPath } from "@/types/domain";
 
 interface LocationDetailsProps {
@@ -165,9 +166,7 @@ export function LocationDetails({
         {location.path.length > 1 && (
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">Path</p>
-            <p className="text-sm">
-              {location.path.map((loc) => loc.code).join(" → ")}
-            </p>
+            <LocationBreadcrumb path={location.path.slice(0, -1)} />
           </div>
         )}
 
