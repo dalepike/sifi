@@ -32,6 +32,7 @@ import { ItemBreadcrumb } from "@/components/items/item-breadcrumb";
 import { ItemFormDialog } from "@/components/items/item-form-dialog";
 import { MoveItemDialog } from "@/components/items/move-item-dialog";
 import { ItemQRCode } from "@/components/items/item-qr-code";
+import { ItemTagsSection } from "@/components/items/item-tags-section";
 import { AttachmentList } from "@/components/attachments";
 import { deleteItem, getItemsInContainer } from "@/actions/items";
 import { getAttachmentsForItem } from "@/actions/attachments";
@@ -221,6 +222,9 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
           {item.description && (
             <p className="text-muted-foreground">{item.description}</p>
           )}
+
+          {/* Tags */}
+          <ItemTagsSection itemId={item.id} />
 
           {/* Photos */}
           {photos.length > 0 && (
