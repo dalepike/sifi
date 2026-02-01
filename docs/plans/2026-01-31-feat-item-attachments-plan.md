@@ -102,23 +102,23 @@ erDiagram
 ## Acceptance Criteria
 
 ### Core Functionality
-- [ ] Can attach any file type to an item
-- [ ] Each attachment has a user-defined title (defaults to filename)
-- [ ] Attachments display on item detail page in dedicated section
-- [ ] Click opens attachment in new browser tab
-- [ ] Can delete attachments
-- [ ] Can reorder attachments (drag-and-drop on desktop, move buttons on mobile)
+- [x] Can attach any file type to an item
+- [x] Each attachment has a user-defined title (defaults to filename)
+- [x] Attachments display on item detail page in dedicated section
+- [x] Click opens attachment in new browser tab
+- [x] Can delete attachments
+- [x] Can reorder attachments (drag-and-drop on desktop, move buttons on mobile)
 
 ### Validation & Limits
-- [ ] File size warning at 5MB
-- [ ] Hard limit at 10MB with clear error message
-- [ ] Title required (cannot be empty)
+- [x] File size warning at 5MB
+- [x] Hard limit at 10MB with clear error message
+- [x] Title required (cannot be empty)
 
 ### UX
-- [ ] Loading indicator during upload
-- [ ] File icon based on mime type (PDF, image, document, generic)
-- [ ] Display file size in human-readable format
-- [ ] Confirm before delete
+- [x] Loading indicator during upload
+- [x] File icon based on mime type (PDF, image, document, generic)
+- [x] Display file size in human-readable format
+- [x] Confirm before delete
 
 ## Success Metrics
 

@@ -1,5 +1,5 @@
 -- SiFi Database Schema
--- 7 tables for inventory tracking
+-- 8 tables for inventory tracking
 
 -- Users (for multi-user foundation)
 CREATE TABLE IF NOT EXISTS users (
@@ -78,6 +78,21 @@ CREATE TABLE IF NOT EXISTS activity_items (
   PRIMARY KEY (activity_id, item_id)
 );
 
+-- Item Attachments (files attached to items)
+CREATE TABLE IF NOT EXISTS item_attachments (
+  id TEXT PRIMARY KEY,
+  item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  filename TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  data TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_locations_user ON locations(user_id);
 CREATE INDEX IF NOT EXISTS idx_locations_parent ON locations(parent_id);
@@ -88,3 +103,4 @@ CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_items_item ON activity_items(item_id);
 CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_item_attachments_item ON item_attachments(item_id);

@@ -165,3 +165,38 @@ export interface ActivityItem {
   itemId: string;
   createdAt: string;
 }
+
+// Item Attachment (files attached to items)
+export interface Attachment extends Timestamps {
+  id: string;
+  itemId: string;
+  userId: string;
+  title: string;
+  filename: string;
+  mimeType: string;
+  data: string; // Base64 encoded file content
+  sizeBytes: number;
+  sortOrder: number;
+}
+
+export interface NewAttachment {
+  itemId: string;
+  userId: string;
+  title: string;
+  filename: string;
+  mimeType: string;
+  data: string;
+  sizeBytes: number;
+}
+
+// For list display (without file data to reduce payload)
+export interface AttachmentMeta {
+  id: string;
+  itemId: string;
+  title: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  sortOrder: number;
+  createdAt: string;
+}

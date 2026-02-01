@@ -32,8 +32,10 @@ import { ItemBreadcrumb } from "@/components/items/item-breadcrumb";
 import { ItemFormDialog } from "@/components/items/item-form-dialog";
 import { MoveItemDialog } from "@/components/items/move-item-dialog";
 import { ItemQRCode } from "@/components/items/item-qr-code";
+import { AttachmentList } from "@/components/attachments";
 import { deleteItem, getItemsInContainer } from "@/actions/items";
-import type { ItemWithLocation, Item } from "@/types/domain";
+import { getAttachmentsForItem } from "@/actions/attachments";
+import type { ItemWithLocation, Item, AttachmentMeta } from "@/types/domain";
 
 interface ItemDetailViewProps {
   item: ItemWithLocation;
@@ -48,6 +50,7 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
   const [containerContents, setContainerContents] = useState<Item[]>([]);
   const [loadingContents, setLoadingContents] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
 
   const isContainer = item.type === "container";
   const Icon = isContainer ? Box : Package;
@@ -64,6 +67,18 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
       });
     }
   }, [isContainer, item.id]);
+
+  // Load attachments
+  const loadAttachments = async () => {
+    const result = await getAttachmentsForItem(item.id);
+    if (result.success) {
+      setAttachments(result.data);
+    }
+  };
+
+  useEffect(() => {
+    loadAttachments();
+  }, [item.id]);
 
   const reloadItem = () => {
     router.refresh();
@@ -270,6 +285,13 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
               )}
             </div>
           )}
+
+          {/* Attachments */}
+          <AttachmentList
+            itemId={item.id}
+            attachments={attachments}
+            onAttachmentsChange={loadAttachments}
+          />
 
           {/* QR Code Section */}
           <div className="space-y-2">
