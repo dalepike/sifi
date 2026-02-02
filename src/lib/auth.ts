@@ -2,7 +2,22 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { getUserWithPasswordHash, verifyPassword, getUserById } from "./db";
 
+const useSecureCookies = process.env.AUTH_URL?.startsWith("https://") ?? false;
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",
@@ -50,6 +65,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
+      console.error("[auth] session callback, token.sub:", token.sub);
       if (token.sub) {
         session.user.id = token.sub;
         const user = await getUserById(token.sub);
@@ -61,6 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
     async jwt({ token, user }) {
+      console.error("[auth] jwt callback, user:", !!user, "token.sub:", token.sub);
       if (user) {
         token.sub = user.id;
       }
