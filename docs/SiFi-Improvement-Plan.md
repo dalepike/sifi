@@ -21,11 +21,11 @@ This improvement plan translates the UX Analysis Report findings into actionable
 | 2 | Profile page exists and is functional | EXPLICIT | HIGH | Low | ✅ DONE |
 | 3 | Secondary text meets WCAG AA contrast (4.5:1) | EXPLICIT | HIGH | Low | ✅ DONE |
 | 4 | Delete actions have confirmation dialogs | EXPLICIT | HIGH | Low | ✅ DONE (pre-existing) |
-| 5 | Location code system has clear explanation | EXPLICIT | MEDIUM | Low | ⏳ PENDING |
-| 6 | QR scan button has visible text label | EXPLICIT | MEDIUM | Low | ⏳ PENDING |
-| 7 | Print queue has discoverable entry points | EXPLICIT | MEDIUM | Medium | ⏳ PENDING |
-| 8 | Activities have color/icon differentiation | EXPLICIT | MEDIUM | Medium | ⏳ PENDING |
-| 9 | Detail panel has better empty state UX | EXPLICIT | MEDIUM | Low | ⏳ PENDING |
+| 5 | Location code system has clear explanation | EXPLICIT | MEDIUM | Low | ✅ DONE |
+| 6 | QR scan button has visible text label | EXPLICIT | MEDIUM | Low | ✅ DONE |
+| 7 | Print queue has discoverable entry points | EXPLICIT | MEDIUM | Medium | ✅ DONE |
+| 8 | Activities have color/icon differentiation | EXPLICIT | MEDIUM | Medium | ✅ DONE |
+| 9 | Detail panel has better empty state UX | EXPLICIT | MEDIUM | Low | ✅ DONE |
 | 10 | Form Type dropdown has option descriptions | EXPLICIT | LOW | Low | ⏳ PENDING |
 | 11 | Photo upload supports drag-and-drop | EXPLICIT | LOW | Medium | ⏳ PENDING |
 | 12 | Batch actions available for items | EXPLICIT | LOW | High | ⏳ PENDING |
@@ -506,19 +506,19 @@ export function useKeyboardShortcuts() {
 
 ## Implementation Order
 
-### Sprint 1: Critical (3-4 days)
-1. [ ] Create Settings page with theme toggle
-2. [ ] Create Profile page with user info
-3. [ ] Update CSS variables for contrast
-4. [ ] Add delete confirmations to all entities
+### Sprint 1: Critical ✅ COMPLETE
+1. [x] Create Settings page with theme toggle
+2. [x] Create Profile page with user info
+3. [x] Update CSS variables for contrast
+4. [x] Add delete confirmations to all entities (pre-existing)
 
-### Sprint 2: Usability (5-7 days)
-1. [ ] Location code explanation in forms
-2. [ ] QR scan button text label
-3. [ ] Print queue button on item views
-4. [ ] Print queue badge count in nav
-5. [ ] Activity colors and icons (schema + UI)
-6. [ ] Detail panel empty state enhancement
+### Sprint 2: Usability ✅ COMPLETE
+1. [x] Location code explanation in forms
+2. [x] QR scan button text label
+3. [x] Print queue button on item views
+4. [x] Print queue badge count in nav
+5. [x] Activity colors and icons (schema + UI)
+6. [x] Detail panel empty state enhancement
 
 ### Sprint 3: Enhancements (7-10 days)
 1. [ ] Type dropdown descriptions
