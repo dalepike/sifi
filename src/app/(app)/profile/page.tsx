@@ -1,42 +1,30 @@
-"use client";
-
-import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, MapPin, Package, Tag, FolderOpen } from "lucide-react";
+import { MapPin, Package, Tag, FolderOpen } from "lucide-react";
 import { getUserStats } from "@/actions/profile";
+import { SignOutButton } from "./sign-out-button";
 
-interface UserStats {
-  locationCount: number;
-  itemCount: number;
-  tagCount: number;
-  activityCount: number;
-}
+export default async function ProfilePage() {
+  const session = await auth();
 
-export default function ProfilePage() {
-  const { data: session } = useSession();
-  const [stats, setStats] = useState<UserStats | null>(null);
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-  useEffect(() => {
-    getUserStats().then((result) => {
-      if (result.success) {
-        setStats(result.data);
-      }
-    });
-  }, []);
+  const user = session.user;
+  const statsResult = await getUserStats();
+  const stats = statsResult.success ? statsResult.data : null;
 
-  const user = session?.user;
-
-  const initials = user?.name
+  const initials = user.name
     ? user.name
         .split(" ")
         .map((n) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() ?? "U";
+    : user.email?.[0]?.toUpperCase() ?? "U";
 
   return (
     <div className="space-y-6">
@@ -54,8 +42,8 @@ export default function ProfilePage() {
               <AvatarFallback className="text-xl">{initials}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle>{user?.name || "User"}</CardTitle>
-              <CardDescription>{user?.email}</CardDescription>
+              <CardTitle>{user.name || "User"}</CardTitle>
+              <CardDescription>{user.email}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -108,13 +96,7 @@ export default function ProfilePage() {
           <CardTitle>Account Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button
-            variant="destructive"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </Button>
+          <SignOutButton />
         </CardContent>
       </Card>
     </div>
