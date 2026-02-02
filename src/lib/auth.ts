@@ -2,19 +2,36 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { getUserWithPasswordHash, verifyPassword, getUserById } from "./db";
 
-const useSecureCookies = process.env.AUTH_URL?.startsWith("https://") ?? false;
-const cookiePrefix = useSecureCookies ? "__Secure-" : "";
-
+// Use simpler cookie names without __Host- or __Secure- prefixes
+// These prefixes cause issues with Railway's proxy
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   cookies: {
     sessionToken: {
-      name: `${cookiePrefix}authjs.session-token`,
+      name: "authjs.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: useSecureCookies,
+        secure: true,
+      },
+    },
+    csrfToken: {
+      name: "authjs.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+    callbackUrl: {
+      name: "authjs.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
       },
     },
   },
