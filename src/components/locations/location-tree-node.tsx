@@ -77,7 +77,14 @@ export function LocationTreeNode({
             <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
           <span className="truncate font-medium">{location.name}</span>
-          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
+          <span
+            className={cn(
+              "shrink-0 rounded px-1.5 py-0.5 text-xs font-mono",
+              isSelected
+                ? "bg-accent-foreground/20 text-accent-foreground"
+                : "bg-muted"
+            )}
+          >
             {location.code}
           </span>
           {childCounts && (childCounts.locations > 0 || childCounts.items > 0) && (
