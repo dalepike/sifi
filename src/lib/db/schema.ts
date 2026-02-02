@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   integer,
+  boolean,
   index,
   primaryKey,
   uniqueIndex,
@@ -69,6 +70,10 @@ export const items = pgTable(
     ),
     parentItemId: uuid("parent_item_id"),
     photos: text("photos"), // JSON array of photo URLs
+    // Warranty and maintenance fields for notifications
+    warrantyExpiresAt: timestamp("warranty_expires_at"),
+    maintenanceIntervalDays: integer("maintenance_interval_days"),
+    lastMaintenanceAt: timestamp("last_maintenance_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -178,6 +183,53 @@ export const itemAttachments = pgTable(
   (table) => [index("attachments_item_id_idx").on(table.itemId)]
 );
 
+// Notification type enum
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "warranty_expiration",
+  "maintenance_due",
+  "custom_reminder",
+]);
+
+// Notifications
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id").references(() => items.id, { onDelete: "cascade" }),
+    type: notificationTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message"),
+    triggerDate: timestamp("trigger_date").notNull(),
+    isRead: boolean("is_read").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("notifications_user_unread_idx").on(table.userId, table.isRead),
+    uniqueIndex("notifications_item_type_date_idx").on(
+      table.itemId,
+      table.type,
+      table.triggerDate
+    ),
+  ]
+);
+
+// Notification Preferences (stored on users table for simplicity)
+export const notificationPreferences = pgTable("notification_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  warrantyReminderDays: integer("warranty_reminder_days").default(30).notNull(),
+  maintenanceReminderDays: integer("maintenance_reminder_days")
+    .default(7)
+    .notNull(),
+  notificationsEnabled: boolean("notifications_enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Type exports for use in application code
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -191,3 +243,7 @@ export type Activity = typeof activities.$inferSelect;
 export type NewActivity = typeof activities.$inferInsert;
 export type ItemAttachment = typeof itemAttachments.$inferSelect;
 export type NewItemAttachment = typeof itemAttachments.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type NewNotificationPreferences = typeof notificationPreferences.$inferInsert;

@@ -27,6 +27,9 @@ const createItemSchema = z.object({
   parentLocationId: z.string().uuid().nullable().optional(),
   parentItemId: z.string().uuid().nullable().optional(),
   photos: z.string().optional(),
+  warrantyExpiresAt: z.string().optional().transform((val) => val || null),
+  maintenanceIntervalDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
+  lastMaintenanceAt: z.string().optional().transform((val) => val || null),
 });
 
 const updateItemSchema = z.object({
@@ -35,6 +38,9 @@ const updateItemSchema = z.object({
   description: z.string().max(500, "Description is too long").optional(),
   type: z.enum(["container", "object"]).optional(),
   photos: z.string().optional(),
+  warrantyExpiresAt: z.string().optional().transform((val) => val || null),
+  maintenanceIntervalDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
+  lastMaintenanceAt: z.string().optional().transform((val) => val || null),
 });
 
 export type ActionResult<T> =
@@ -62,6 +68,9 @@ export async function createItem(
     parentLocationId: formData.get("parentLocationId") || null,
     parentItemId: formData.get("parentItemId") || null,
     photos: formData.get("photos") || undefined,
+    warrantyExpiresAt: formData.get("warrantyExpiresAt") || undefined,
+    maintenanceIntervalDays: formData.get("maintenanceIntervalDays") || undefined,
+    lastMaintenanceAt: formData.get("lastMaintenanceAt") || undefined,
   };
 
   const parsed = createItemSchema.safeParse(rawData);
@@ -72,7 +81,7 @@ export async function createItem(
     };
   }
 
-  const { id, name, description, type, parentLocationId, parentItemId, photos } =
+  const { id, name, description, type, parentLocationId, parentItemId, photos, warrantyExpiresAt, maintenanceIntervalDays, lastMaintenanceAt } =
     parsed.data;
 
   // Validate exactly one parent
@@ -114,6 +123,9 @@ export async function createItem(
       parentLocationId: parentLocationId || null,
       parentItemId: parentItemId || null,
       photos: photos || null,
+      warrantyExpiresAt: warrantyExpiresAt || null,
+      maintenanceIntervalDays: maintenanceIntervalDays ?? null,
+      lastMaintenanceAt: lastMaintenanceAt || null,
     });
 
     revalidatePath("/locations");
@@ -141,6 +153,9 @@ export async function updateItem(
     description: formData.get("description"),
     type: formData.get("type") || undefined,
     photos: formData.get("photos"),
+    warrantyExpiresAt: formData.get("warrantyExpiresAt") || undefined,
+    maintenanceIntervalDays: formData.get("maintenanceIntervalDays") || undefined,
+    lastMaintenanceAt: formData.get("lastMaintenanceAt") || undefined,
   };
 
   const parsed = updateItemSchema.safeParse(rawData);
@@ -151,7 +166,7 @@ export async function updateItem(
     };
   }
 
-  const { id, name, description, type, photos } = parsed.data;
+  const { id, name, description, type, photos, warrantyExpiresAt, maintenanceIntervalDays, lastMaintenanceAt } = parsed.data;
 
   // Verify item exists and belongs to user
   const existing = await dbGetItemById(id, userId);
@@ -176,6 +191,9 @@ export async function updateItem(
       description: description !== undefined ? description || null : undefined,
       type,
       photos: photos !== undefined ? photos || null : undefined,
+      warrantyExpiresAt: warrantyExpiresAt !== undefined ? warrantyExpiresAt : undefined,
+      maintenanceIntervalDays: maintenanceIntervalDays !== undefined ? maintenanceIntervalDays : undefined,
+      lastMaintenanceAt: lastMaintenanceAt !== undefined ? lastMaintenanceAt : undefined,
     });
 
     if (!item) {
