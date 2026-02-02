@@ -2,156 +2,135 @@
 
 **Last Updated:** 2026-02-01
 
-This document tracks planned features and improvements for SiFi.
+This document tracks the product roadmap for SiFi, organized by named releases.
+
+---
+
+## Current Release: Interface Refresh
+
+**Status:** Planning
+**Goal:** Transform the interface with a polished dark design system
+
+### Phase 1: Foundation
+- [ ] Implement teal/cyan accent color palette
+- [ ] Update CSS custom properties for dark backgrounds
+- [ ] Apply typography scale (Inter, 12-36px)
+- [ ] Implement 4px-base spacing system
+- [ ] Update border radius tokens
+
+### Phase 2: Components
+- [ ] Redesign card components (rounded, borderless)
+- [ ] Update button styles (56px CTAs, circular icons)
+- [ ] Create location hierarchy row with tree lines
+- [ ] Improve empty state treatments
+- [ ] Redesign tag pills with category colors
+
+### Phase 3: Screens
+- [ ] Redesign Locations/Home with "Your Spaces" header
+- [ ] Update item detail with collapsible sections
+- [ ] Add space type selector (Home, Office, Vehicle)
+- [ ] Implement bottom navigation for mobile
+
+### Phase 4: Polish
+- [ ] Add transitions and micro-interactions
+- [ ] Implement skeleton loading states
+- [ ] Design error states
+- [ ] Conduct final accessibility audit
+
+---
+
+## Upcoming Releases
+
+### Notifications
+**Goal:** Allow users to set reminders and alerts for items
+
+**MVP Scope:**
+- In-app notifications only (no email/push initially)
+- Manual reminders with user-set dates
+- Notification bell with unread count
+- Mark as read/dismiss functionality
+
+**Use Cases:**
+- Warranty expiration reminders
+- Maintenance schedule alerts
+- Periodic "check on item" reminders
+
+### Data Portability
+**Goal:** Allow users to export and backup their inventory data
+
+**MVP Scope:**
+- JSON export (complete data, suitable for re-import)
+- CSV export (spreadsheet-compatible)
+- Export button in Settings
+- Download via browser
+
+**Entities:**
+- Locations (with hierarchy)
+- Items (with location paths)
+- Tags, Activities
+- Attachment metadata
+
+### Foundation Polish
+**Goal:** Location customization and improved empty states
+
+**Scope:**
+- Configurable emoji icons per location
+- Root location type selector (Home, Office, Vehicle)
+- Visual hierarchy with tree lines
+- Level-appropriate count labels (rooms/spots/items)
+- Improved empty state with "How it works" guide
+
+---
+
+## Future Vision: Households (v2.0)
+
+**Goal:** Transform SiFi into a family-shared household organization system
+
+This major release is deferred to a future version. Key features:
+- Household creation and member invites
+- Admin/Member/Viewer roles
+- Shared vs private item visibility
+- Activity feed for collaboration
+- Location permission levels
+
+*See archived Product Vision document for full details.*
 
 ---
 
 ## Completed
 
-### UX Improvements (Sprint 1-4) ✅
-All 15 issues from the UX Analysis Report have been implemented:
-- Settings & Profile pages
-- WCAG AA contrast compliance
-- Delete confirmations
-- Location code explanations
-- QR scan button improvements
-- Print queue discoverability
-- Activity colors/icons
-- Keyboard shortcuts
-- Drag-and-drop photo upload
-- Batch actions (move, tag, delete, print)
-- Mobile touch targets
-- Truncation tooltips
+### UX Improvements (Sprint 1-4)
+- [x] Settings & Profile pages
+- [x] WCAG AA contrast compliance
+- [x] Delete confirmations
+- [x] Location code explanations
+- [x] QR scan button improvements
+- [x] Print queue discoverability
+- [x] Activity colors/icons
+- [x] Keyboard shortcuts
+- [x] Drag-and-drop photo upload
+- [x] Batch actions (move, tag, delete, print)
+- [x] Mobile touch targets
+- [x] Truncation tooltips
 
-### Dark Mode ✅
-- Light/Dark/System theme toggle in Settings
-- Powered by next-themes
+### Dark Mode
+- [x] Light/Dark/System theme toggle in Settings
+- [x] Powered by next-themes
 
-### File Attachments ✅
-- Attach PDFs, images, and documents to items
-- Custom titles for each attachment
-- View attachments from item detail page
-
----
-
-## Planned Features
-
-### Notifications System
-**Priority:** Medium
-**Effort:** Medium
-
-Allow users to set reminders and alerts for items.
-
-**Use Cases:**
-- Warranty expiration reminders
-- Maintenance schedule alerts
-- "Check on item" periodic reminders
-- Low-stock alerts for consumables
-
-**Implementation Approach:**
-1. **Database Schema:**
-   ```sql
-   CREATE TABLE notifications (
-     id UUID PRIMARY KEY,
-     user_id UUID NOT NULL REFERENCES users(id),
-     item_id UUID REFERENCES items(id),
-     type TEXT NOT NULL, -- 'reminder', 'warranty', 'maintenance'
-     title TEXT NOT NULL,
-     message TEXT,
-     due_date TIMESTAMP,
-     is_read BOOLEAN DEFAULT FALSE,
-     created_at TIMESTAMP DEFAULT NOW()
-   );
-   ```
-
-2. **UI Components:**
-   - Notification bell in header with unread count
-   - Notification dropdown/panel
-   - "Add Reminder" button on item details
-   - Notification preferences in Settings
-
-3. **Backend:**
-   - Server actions for CRUD operations
-   - Consider: Email notifications (requires email service integration)
-   - Consider: Push notifications (requires service worker + push service)
-
-**MVP Scope:**
-- In-app notifications only (no email/push)
-- Manual reminders (user sets date)
-- Notification list page
-- Mark as read/dismiss
+### File Attachments
+- [x] Attach PDFs, images, and documents to items
+- [x] Custom titles for each attachment
+- [x] View attachments from item detail page
 
 ---
 
-### Data Export
-**Priority:** Medium
-**Effort:** Low
+## Archive
 
-Allow users to export their inventory data for backup or migration.
-
-**Export Formats:**
-- JSON (complete data, suitable for re-import)
-- CSV (spreadsheet-compatible, one file per entity type)
-
-**Entities to Export:**
-- Locations (with hierarchy)
-- Items (with location paths)
-- Tags
-- Activities
-- Attachments (metadata only, or full base64)
-
-**Implementation Approach:**
-1. **Server Actions:**
-   ```typescript
-   // src/actions/export.ts
-   export async function exportToJSON(): Promise<{ success: true; data: string } | { success: false; error: string }>
-   export async function exportToCSV(): Promise<{ success: true; data: Record<string, string> } | { success: false; error: string }>
-   ```
-
-2. **UI:**
-   - Export buttons in Settings page
-   - Format selection (JSON/CSV)
-   - Download triggered via blob URL
-   - Optional: Include/exclude attachments toggle
-
-3. **Considerations:**
-   - Large datasets: Stream or paginate
-   - Attachments: Warn about file size if including base64
-   - Privacy: Only export user's own data
-
-**MVP Scope:**
-- JSON export (single file, all entities)
-- CSV export (zip of multiple CSVs)
-- Download button in Settings
-
----
-
-## Future Considerations
-
-### Data Import
-- Re-import from JSON backup
-- Import from CSV
-- Merge vs. replace options
-
-### Sharing & Collaboration
-- Share locations/items with other users
-- Read-only vs. edit permissions
-- Shared households/organizations
-
-### Mobile App
-- React Native or PWA
-- Offline support with sync
-- Native camera integration
-
-### Barcode Support
-- Scan existing barcodes (UPC, EAN)
-- Link to product databases
-- Auto-populate item details
-
-### Analytics Dashboard
-- Item counts over time
-- Most accessed items
-- Location utilization
+Previous planning documents consolidated into this roadmap:
+- `docs/archive/2026-02-01-roadmap-consolidation/SiFi-Improvement-Plan.md`
+- `docs/archive/2026-02-01-roadmap-consolidation/SiFi-Interface-Design-Prospectus.md`
+- `docs/archive/2026-02-01-roadmap-consolidation/SiFi-Product-Vision-Roadmap.md`
+- `docs/archive/2026-02-01-roadmap-consolidation/SiFi-UX-Analysis-FollowUp-Report.md`
 
 ---
 
