@@ -28,7 +28,7 @@ This improvement plan translates the UX Analysis Report findings into actionable
 | 9 | Detail panel has better empty state UX | EXPLICIT | MEDIUM | Low | ✅ DONE |
 | 10 | Form Type dropdown has option descriptions | EXPLICIT | LOW | Low | ✅ DONE |
 | 11 | Photo upload supports drag-and-drop | EXPLICIT | LOW | Medium | ✅ DONE |
-| 12 | Batch actions available for items | EXPLICIT | LOW | High | ⏳ PENDING |
+| 12 | Batch actions available for items | EXPLICIT | LOW | High | ✅ DONE |
 | 13 | Keyboard shortcuts implemented | EXPLICIT | LOW | Medium | ✅ DONE |
 | 14 | Mobile text truncation improved | EXPLICIT | LOW | Low | ✅ DONE |
 | 15 | Tag removal has larger tap targets | EXPLICIT | LOW | Low | ✅ DONE |
@@ -528,12 +528,12 @@ export function useKeyboardShortcuts() {
 5. [x] Mobile truncation with tooltips
 6. [x] Tag/activity removal touch targets (28px minimum)
 
-### Sprint 4: Advanced (10+ days)
-1. [ ] Multi-select mode for items
-2. [ ] Batch actions floating bar
-3. [ ] Batch server actions
-4. [ ] Batch move dialog
-5. [ ] Batch tag assignment dialog
+### Sprint 4: Advanced ✅ COMPLETE
+1. [x] Multi-select mode for items (checkbox UI)
+2. [x] Batch actions floating bar (Move, Tag, Print, Delete)
+3. [x] Batch server actions (batchMoveItems, batchDeleteItems, batchAddTag)
+4. [x] Batch move dialog (location/container selection)
+5. [x] Batch tag assignment dialog
 
 ---
 
