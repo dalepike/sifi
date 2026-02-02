@@ -209,16 +209,16 @@ If no parent is provided, the add page shows a location picker. No modal, no con
 ## Acceptance Criteria
 
 ### Phase 1: Visual Update
-- [ ] Teal accent (#5BC0BE) visible in buttons, links, active states
-- [ ] Cards have 16px radius and subtle shadow
-- [ ] Location tree shows visual hierarchy
-- [ ] Dark mode looks polished
+- [x] Teal accent (#5BC0BE) visible in buttons, links, active states
+- [x] Cards have 16px radius and subtle shadow
+- [x] Location tree shows visual hierarchy
+- [x] Dark mode looks polished
 
 ### Phase 2: Navigation and Polish
-- [ ] Navigation styled with 64px height and safe area
-- [ ] Empty states show helpful text and CTA
-- [ ] QR scanner handles permission and no-detection states
-- [ ] No accessibility critical issues from axe-core
+- [x] Navigation styled with 64px height and safe area
+- [x] Empty states show helpful text and CTA
+- [x] QR scanner handles permission and no-detection states
+- [x] No accessibility critical issues from axe-core
 
 ---
 
