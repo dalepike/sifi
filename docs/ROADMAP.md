@@ -6,6 +6,44 @@ This document tracks the product roadmap for SiFi, organized by named releases.
 
 ---
 
+## Current Release: Custom Reminders (Release 5)
+
+**Status:** Planning
+**Priority:** High
+**Goal:** Item-level custom notifications with full CRUD and recurrence support
+
+**Plan:** `docs/plans/2026-02-02-feat-item-level-custom-notifications-plan.md`
+
+### Phase 1: Schema & Data Layer
+- [ ] Add recurrence columns to notifications table (migration)
+- [ ] Update types and database functions
+
+### Phase 2: Server Actions
+- [ ] Create/update/delete reminder actions
+- [ ] Get reminders by item action
+
+### Phase 3: Reminder List Component
+- [ ] List view on item detail page (like attachments)
+- [ ] Visual differentiation (custom vs auto-generated)
+- [ ] Edit/delete buttons for custom only
+
+### Phase 4: Reminder Form Dialog
+- [ ] Title, date/time, recurrence type, end date, message
+- [ ] Edit mode support
+
+### Phase 5: Item Detail Integration
+- [ ] Add Reminders section after attachments
+
+### Phase 6: Recurring Processing
+- [ ] Update cron job to handle recurrence
+- [ ] Auto-create next occurrence when triggered
+
+### Phase 7: Notification Bell Enhancement
+- [ ] Show custom reminders in dropdown
+- [ ] Link to source item
+
+---
+
 ## Future Vision: Households (v2.0)
 
 **Goal:** Transform SiFi into a family-shared household organization system
