@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Camera, X, Upload } from "lucide-react";
+import { Camera, X, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { createItem, updateItem } from "@/actions/items";
 import type { Item, ItemType } from "@/types/domain";
+
+function formatDateForInput(dateString: string | null): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toISOString().split("T")[0];
+}
 
 interface ItemFormDialogProps {
   open: boolean;
@@ -55,6 +66,9 @@ export function ItemFormDialog({
     }
     return [];
   });
+  const [showAdvanced, setShowAdvanced] = useState(
+    !!(item?.warrantyExpiresAt || item?.maintenanceIntervalDays)
+  );
 
   const isEditing = !!item;
   const title = isEditing ? "Edit Item" : "New Item";
@@ -243,6 +257,71 @@ export function ItemFormDialog({
                 )}
               </div>
             </div>
+
+            <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-between"
+                >
+                  <span className="text-sm text-muted-foreground">
+                    Warranty & Maintenance
+                  </span>
+                  {showAdvanced ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="warrantyExpiresAt">Warranty expires</Label>
+                  <Input
+                    id="warrantyExpiresAt"
+                    name="warrantyExpiresAt"
+                    type="date"
+                    defaultValue={formatDateForInput(item?.warrantyExpiresAt ?? null)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get reminded before your warranty expires
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="maintenanceIntervalDays">
+                      Maintenance every
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="maintenanceIntervalDays"
+                        name="maintenanceIntervalDays"
+                        type="number"
+                        min={1}
+                        max={365}
+                        defaultValue={item?.maintenanceIntervalDays ?? ""}
+                        placeholder="30"
+                        className="w-20"
+                      />
+                      <span className="text-sm text-muted-foreground">days</span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="lastMaintenanceAt">Last maintained</Label>
+                    <Input
+                      id="lastMaintenanceAt"
+                      name="lastMaintenanceAt"
+                      type="date"
+                      defaultValue={formatDateForInput(item?.lastMaintenanceAt ?? null)}
+                    />
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           <DialogFooter>

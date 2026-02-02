@@ -15,6 +15,9 @@ function toDomainItem(row: typeof items.$inferSelect): Item {
     parentLocationId: row.parentLocationId,
     parentItemId: row.parentItemId,
     photos: row.photos,
+    warrantyExpiresAt: row.warrantyExpiresAt ? formatDateRequired(row.warrantyExpiresAt) : null,
+    maintenanceIntervalDays: row.maintenanceIntervalDays,
+    lastMaintenanceAt: row.lastMaintenanceAt ? formatDateRequired(row.lastMaintenanceAt) : null,
     createdAt: formatDateRequired(row.createdAt),
     updatedAt: formatDateRequired(row.updatedAt),
   } as Item;
@@ -40,6 +43,9 @@ export async function createItem(data: NewItem): Promise<Item> {
       parentLocationId: data.parentLocationId ?? null,
       parentItemId: data.parentItemId ?? null,
       photos: data.photos ?? null,
+      warrantyExpiresAt: data.warrantyExpiresAt ? new Date(data.warrantyExpiresAt) : null,
+      maintenanceIntervalDays: data.maintenanceIntervalDays ?? null,
+      lastMaintenanceAt: data.lastMaintenanceAt ? new Date(data.lastMaintenanceAt) : null,
     })
     .returning();
 
@@ -111,6 +117,15 @@ export async function updateItem(
   }
   if (data.photos !== undefined) {
     updateData.photos = data.photos;
+  }
+  if (data.warrantyExpiresAt !== undefined) {
+    updateData.warrantyExpiresAt = data.warrantyExpiresAt ? new Date(data.warrantyExpiresAt) : null;
+  }
+  if (data.maintenanceIntervalDays !== undefined) {
+    updateData.maintenanceIntervalDays = data.maintenanceIntervalDays;
+  }
+  if (data.lastMaintenanceAt !== undefined) {
+    updateData.lastMaintenanceAt = data.lastMaintenanceAt ? new Date(data.lastMaintenanceAt) : null;
   }
 
   // Handle parent changes (must maintain XOR constraint)

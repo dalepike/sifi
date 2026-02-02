@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { MainNav } from "./main-nav";
 import { UserMenu } from "./user-menu";
 import { ScanButton } from "./scan-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export async function Header() {
   const session = await auth();
@@ -20,7 +21,12 @@ export async function Header() {
         </div>
         <div className="flex items-center gap-2">
           <ScanButton />
-          {session?.user && <UserMenu user={session.user} />}
+          {session?.user && (
+            <>
+              <NotificationBell />
+              <UserMenu user={session.user} />
+            </>
+          )}
         </div>
       </div>
     </header>

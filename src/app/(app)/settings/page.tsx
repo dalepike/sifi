@@ -3,13 +3,17 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Download, Palette } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { getNotificationPreferences } from "@/lib/db/notifications";
+import { NotificationSettings } from "./notification-settings";
 
 export default async function SettingsPage() {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
+
+  const preferences = await getNotificationPreferences(session.user.id);
 
   return (
     <div className="space-y-6">
@@ -43,13 +47,12 @@ export default async function SettingsPage() {
               Notifications
             </CardTitle>
             <CardDescription>
-              Configure notification preferences.
+              Configure when you receive reminders about warranties and
+              maintenance.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Notification settings coming soon.
-            </p>
+            <NotificationSettings initialPreferences={preferences} />
           </CardContent>
         </Card>
 
