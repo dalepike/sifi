@@ -452,8 +452,9 @@ export function ItemDetails({
                   {tag.name}
                   <button
                     onClick={() => handleRemoveTag(tag.id)}
-                    className="ml-1 rounded-full hover:bg-muted p-0.5"
+                    className="ml-0.5 -mr-0.5 rounded-full hover:bg-muted p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation"
                     title="Remove tag"
+                    aria-label={`Remove ${tag.name} tag`}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -524,8 +525,9 @@ export function ItemDetails({
                   {activity.name}
                   <button
                     onClick={() => handleRemoveFromActivity(activity.id)}
-                    className="ml-1 rounded-full hover:bg-muted p-0.5"
+                    className="ml-0.5 -mr-0.5 rounded-full hover:bg-muted p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation"
                     title="Remove from activity"
+                    aria-label={`Remove from ${activity.name}`}
                   >
                     <X className="h-3 w-3" />
                   </button>

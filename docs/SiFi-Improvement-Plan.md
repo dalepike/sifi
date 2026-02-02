@@ -26,12 +26,12 @@ This improvement plan translates the UX Analysis Report findings into actionable
 | 7 | Print queue has discoverable entry points | EXPLICIT | MEDIUM | Medium | ✅ DONE |
 | 8 | Activities have color/icon differentiation | EXPLICIT | MEDIUM | Medium | ✅ DONE |
 | 9 | Detail panel has better empty state UX | EXPLICIT | MEDIUM | Low | ✅ DONE |
-| 10 | Form Type dropdown has option descriptions | EXPLICIT | LOW | Low | ⏳ PENDING |
-| 11 | Photo upload supports drag-and-drop | EXPLICIT | LOW | Medium | ⏳ PENDING |
+| 10 | Form Type dropdown has option descriptions | EXPLICIT | LOW | Low | ✅ DONE |
+| 11 | Photo upload supports drag-and-drop | EXPLICIT | LOW | Medium | ✅ DONE |
 | 12 | Batch actions available for items | EXPLICIT | LOW | High | ⏳ PENDING |
-| 13 | Keyboard shortcuts implemented | EXPLICIT | LOW | Medium | ⏳ PENDING |
-| 14 | Mobile text truncation improved | EXPLICIT | LOW | Low | ⏳ PENDING |
-| 15 | Tag removal has larger tap targets | EXPLICIT | LOW | Low | ⏳ PENDING |
+| 13 | Keyboard shortcuts implemented | EXPLICIT | LOW | Medium | ✅ DONE |
+| 14 | Mobile text truncation improved | EXPLICIT | LOW | Low | ✅ DONE |
+| 15 | Tag removal has larger tap targets | EXPLICIT | LOW | Low | ✅ DONE |
 
 ---
 
@@ -520,13 +520,13 @@ export function useKeyboardShortcuts() {
 5. [x] Activity colors and icons (schema + UI)
 6. [x] Detail panel empty state enhancement
 
-### Sprint 3: Enhancements (7-10 days)
-1. [ ] Type dropdown descriptions
-2. [ ] Drag-and-drop photo upload
-3. [ ] Keyboard shortcuts system
-4. [ ] Keyboard shortcuts help modal
-5. [ ] Mobile truncation with tooltips
-6. [ ] Tag removal touch targets
+### Sprint 3: Enhancements ✅ COMPLETE
+1. [x] Type dropdown descriptions
+2. [x] Drag-and-drop photo upload (react-dropzone)
+3. [x] Keyboard shortcuts system (g+l, g+t, g+a, g+s, g+p, /, ?)
+4. [x] Keyboard shortcuts help modal
+5. [x] Mobile truncation with tooltips
+6. [x] Tag/activity removal touch targets (28px minimum)
 
 ### Sprint 4: Advanced (10+ days)
 1. [ ] Multi-select mode for items
@@ -572,6 +572,42 @@ export function useKeyboardShortcuts() {
 | User Confusion Points | 5+ | 0-1 |
 | Mobile Usability Score | Unknown | 90+ |
 | Keyboard Accessibility | None | Full |
+
+---
+
+## Deployment Notes
+
+### Railway Build Fix (2026-02-01)
+
+**Issue:** Sprint 1 deployment failed on Railway with error:
+```
+Error occurred prerendering page "/profile"
+TypeError: Cannot destructure property 'data' of '(0 , c.useSession)(...)' as it is undefined.
+```
+
+**Cause:** Profile page was a client component using `useSession()` which requires `SessionProvider`. During static generation, no session provider exists.
+
+**Fix:** Converted Profile page to server component using `auth()` directly, extracted `SignOutButton` to client component.
+
+**Pattern for authenticated pages:**
+```tsx
+// Server component - use auth() directly
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export default async function ProtectedPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  // ... render with session.user
+}
+
+// Client component - only for interactive parts
+"use client";
+import { signOut } from "next-auth/react";
+export function SignOutButton() {
+  return <Button onClick={() => signOut()}>Sign Out</Button>;
+}
+```
 
 ---
 

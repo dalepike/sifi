@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Camera, X } from "lucide-react";
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import { Camera, X, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -54,7 +55,6 @@ export function ItemFormDialog({
     }
     return [];
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = !!item;
   const title = isEditing ? "Edit Item" : "New Item";
@@ -64,11 +64,8 @@ export function ItemFormDialog({
       ? "Add a new item to this container."
       : "Add a new item to this location.";
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach((file) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    acceptedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
@@ -76,12 +73,15 @@ export function ItemFormDialog({
       };
       reader.readAsDataURL(file);
     });
+  }, []);
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
+    },
+    multiple: true,
+  });
 
   const removePhoto = (index: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
@@ -159,15 +159,24 @@ export function ItemFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="object">Object</SelectItem>
-                  <SelectItem value="container">Container</SelectItem>
+                  <SelectItem value="object">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">Object</span>
+                      <span className="text-xs text-muted-foreground">
+                        An individual item like a tool, book, or gadget
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="container">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">Container</span>
+                      <span className="text-xs text-muted-foreground">
+                        A box, bin, or storage unit that holds other items
+                      </span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {type === "container"
-                  ? "Containers can hold other items inside them"
-                  : "Objects are individual items that cannot contain others"}
-              </p>
             </div>
 
             <div className="grid gap-2">
@@ -183,14 +192,6 @@ export function ItemFormDialog({
 
             <div className="grid gap-2">
               <Label>Photos (optional)</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handlePhotoUpload}
-              />
 
               {photos.length > 0 && (
                 <div className="grid grid-cols-4 gap-2">
@@ -207,7 +208,7 @@ export function ItemFormDialog({
                       <button
                         type="button"
                         onClick={() => removePhoto(index)}
-                        className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/90"
+                        className="absolute right-1 top-1 rounded-full bg-destructive p-1.5 text-destructive-foreground hover:bg-destructive/90 min-w-[28px] min-h-[28px] flex items-center justify-center"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -216,14 +217,31 @@ export function ItemFormDialog({
                 </div>
               )}
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
+              <div
+                {...getRootProps()}
+                className={`
+                  flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors
+                  ${isDragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-muted-foreground/50"
+                  }
+                `}
               >
-                <Camera className="mr-2 h-4 w-4" />
-                {photos.length > 0 ? "Add More Photos" : "Add Photos"}
-              </Button>
+                <input {...getInputProps()} />
+                {isDragActive ? (
+                  <>
+                    <Upload className="h-8 w-8 text-primary" />
+                    <p className="text-sm text-primary font-medium">Drop photos here</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Drag and drop photos here, or click to browse
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
