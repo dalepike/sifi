@@ -15,6 +15,13 @@
       "when": 1770004594988,
       "tag": "0001_add-notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770019200000,
+      "tag": "0002_add-location-icon-type",
+      "breakpoints": true
     }
   ]
 }

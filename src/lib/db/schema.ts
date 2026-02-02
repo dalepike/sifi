@@ -17,6 +17,13 @@ export const activityStatusEnum = pgEnum("activity_status", [
   "active",
   "archived",
 ]);
+export const locationTypeEnum = pgEnum("location_type", [
+  "home",
+  "office",
+  "vehicle",
+  "storage",
+  "other",
+]);
 
 // Users
 export const users = pgTable(
@@ -43,6 +50,8 @@ export const locations = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     code: text("code").notNull(),
+    icon: text("icon"), // Emoji icon for display
+    locationType: locationTypeEnum("location_type"), // Type for root locations
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

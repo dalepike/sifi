@@ -23,6 +23,9 @@ export interface NewUser {
   name?: string | null;
 }
 
+// Location types
+export type LocationType = "home" | "office" | "vehicle" | "storage" | "other";
+
 // Location (recursive hierarchy)
 export interface Location extends Timestamps {
   id: string;
@@ -31,6 +34,8 @@ export interface Location extends Timestamps {
   name: string;
   description: string | null;
   code: string; // 2-letter prefix (e.g., "GA")
+  icon: string | null; // Emoji icon
+  locationType: LocationType | null; // Type for root locations
 }
 
 export interface NewLocation {
@@ -40,6 +45,8 @@ export interface NewLocation {
   name: string;
   description?: string | null;
   code: string;
+  icon?: string | null;
+  locationType?: LocationType | null;
 }
 
 export interface LocationWithPath extends Location {

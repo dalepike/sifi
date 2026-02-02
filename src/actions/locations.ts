@@ -14,7 +14,9 @@ import {
   getLocationChildCounts,
   isCodeUnique,
 } from "@/lib/db/locations";
-import type { Location, LocationWithPath } from "@/types/domain";
+import type { Location, LocationWithPath, LocationType } from "@/types/domain";
+
+const locationTypeSchema = z.enum(["home", "office", "vehicle", "storage", "other"]);
 
 const createLocationSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
@@ -24,6 +26,8 @@ const createLocationSchema = z.object({
     .length(2, "Code must be exactly 2 characters")
     .regex(/^[A-Za-z0-9]+$/, "Code must be alphanumeric"),
   parentId: z.string().uuid().nullable().optional(),
+  icon: z.string().max(10, "Icon too long").optional(),
+  locationType: locationTypeSchema.nullable().optional(),
 });
 
 const updateLocationSchema = z.object({
@@ -40,6 +44,8 @@ const updateLocationSchema = z.object({
     .regex(/^[A-Za-z0-9]+$/, "Code must be alphanumeric")
     .optional(),
   parentId: z.string().uuid().nullable().optional(),
+  icon: z.string().max(10, "Icon too long").nullable().optional(),
+  locationType: locationTypeSchema.nullable().optional(),
 });
 
 export type ActionResult<T> =
@@ -64,6 +70,8 @@ export async function createLocation(
     description: formData.get("description") || undefined,
     code: formData.get("code"),
     parentId: formData.get("parentId") || null,
+    icon: formData.get("icon") || undefined,
+    locationType: formData.get("locationType") || null,
   };
 
   const parsed = createLocationSchema.safeParse(rawData);
@@ -74,7 +82,7 @@ export async function createLocation(
     };
   }
 
-  const { name, description, code, parentId } = parsed.data;
+  const { name, description, code, parentId, icon, locationType } = parsed.data;
 
   // Check code uniqueness
   if (!(await isCodeUnique(code, userId))) {
@@ -99,6 +107,8 @@ export async function createLocation(
       description: description || null,
       code,
       parentId: parentId || null,
+      icon: icon || null,
+      locationType: locationType || null,
     });
 
     revalidatePath("/locations");
@@ -126,6 +136,8 @@ export async function updateLocation(
     description: formData.get("description"),
     code: formData.get("code") || undefined,
     parentId: formData.has("parentId") ? formData.get("parentId") || null : undefined,
+    icon: formData.has("icon") ? formData.get("icon") || null : undefined,
+    locationType: formData.has("locationType") ? formData.get("locationType") || null : undefined,
   };
 
   const parsed = updateLocationSchema.safeParse(rawData);
@@ -136,7 +148,7 @@ export async function updateLocation(
     };
   }
 
-  const { id, name, description, code, parentId } = parsed.data;
+  const { id, name, description, code, parentId, icon, locationType } = parsed.data;
 
   // Verify location exists and belongs to user
   const existing = await dbGetLocationById(id, userId);
@@ -177,6 +189,8 @@ export async function updateLocation(
       description: description !== undefined ? description || null : undefined,
       code,
       parentId,
+      icon,
+      locationType,
     });
 
     if (!location) {

@@ -109,12 +109,23 @@ export function LocationDetails({
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
+            {location.icon ? (
+              <span className="text-2xl leading-none">{location.icon}</span>
+            ) : (
+              <MapPin className="h-5 w-5" />
+            )}
             {location.name}
           </CardTitle>
-          <Badge variant="secondary" className="font-mono">
-            {location.code}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="font-mono">
+              {location.code}
+            </Badge>
+            {location.locationType && (
+              <Badge variant="outline" className="capitalize">
+                {location.locationType}
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" onClick={() => onEdit(location)}>

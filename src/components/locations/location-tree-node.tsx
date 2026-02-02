@@ -71,16 +71,28 @@ export function LocationTreeNode({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
           onClick={() => onSelect(location)}
         >
-          <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {location.icon ? (
+            <span className="text-base leading-none shrink-0">{location.icon}</span>
+          ) : (
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
           <span className="truncate font-medium">{location.name}</span>
           <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
             {location.code}
           </span>
-          {childCounts && (
+          {childCounts && (childCounts.locations > 0 || childCounts.items > 0) && (
             <span className="shrink-0 text-xs text-muted-foreground">
-              {childCounts.locations > 0 && `${childCounts.locations} loc`}
+              {childCounts.locations > 0 && (
+                <>
+                  {childCounts.locations} {depth === 0 ? "room" : "spot"}{childCounts.locations !== 1 ? "s" : ""}
+                </>
+              )}
               {childCounts.locations > 0 && childCounts.items > 0 && ", "}
-              {childCounts.items > 0 && `${childCounts.items} items`}
+              {childCounts.items > 0 && (
+                <>
+                  {childCounts.items} item{childCounts.items !== 1 ? "s" : ""}
+                </>
+              )}
             </span>
           )}
         </button>

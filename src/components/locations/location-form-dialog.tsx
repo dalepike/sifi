@@ -13,8 +13,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { createLocation, updateLocation } from "@/actions/locations";
-import type { Location } from "@/types/domain";
+import type { Location, LocationType } from "@/types/domain";
+import { Home, Building2, Car, Warehouse, MoreHorizontal } from "lucide-react";
+
+// Common emojis for location icons
+const LOCATION_EMOJIS = [
+  // Rooms
+  "🛋️", "🛏️", "🍳", "🚿", "🚽", "🧺", "📚", "💻", "🎮", "🏋️",
+  // Storage
+  "📦", "🗄️", "🧰", "🗃️", "🏠", "🏢", "🚗", "🚙", "🏍️", "🚲",
+  // Outdoor
+  "🌳", "🌻", "🏡", "🔧", "⚡", "🎄", "🏖️", "⛺", "🏕️", "🌊",
+  // Special
+  "⭐", "❤️", "💎", "🔑", "📍", "🎯", "✨", "🔥", "💡", "🎁",
+];
+
+const LOCATION_TYPE_CONFIG: Record<LocationType, { label: string; icon: typeof Home; defaultEmoji: string }> = {
+  home: { label: "Home", icon: Home, defaultEmoji: "🏠" },
+  office: { label: "Office", icon: Building2, defaultEmoji: "🏢" },
+  vehicle: { label: "Vehicle", icon: Car, defaultEmoji: "🚗" },
+  storage: { label: "Storage Unit", icon: Warehouse, defaultEmoji: "📦" },
+  other: { label: "Other", icon: MoreHorizontal, defaultEmoji: "📍" },
+};
 
 interface LocationFormDialogProps {
   open: boolean;
@@ -33,8 +66,12 @@ export function LocationFormDialog({
 }: LocationFormDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(location?.icon ?? null);
+  const [selectedType, setSelectedType] = useState<LocationType | null>(location?.locationType ?? null);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   const isEditing = !!location;
+  const isRootLocation = !parentId && !location?.parentId;
   const title = isEditing ? "Edit Location" : "New Location";
   const description = isEditing
     ? "Update the location details."
@@ -55,6 +92,14 @@ export function LocationFormDialog({
       formData.set("parentId", parentId);
     }
 
+    // Add icon and locationType
+    if (selectedIcon) {
+      formData.set("icon", selectedIcon);
+    }
+    if (selectedType && isRootLocation) {
+      formData.set("locationType", selectedType);
+    }
+
     const result = isEditing
       ? await updateLocation(formData)
       : await createLocation(formData);
@@ -67,6 +112,14 @@ export function LocationFormDialog({
     }
 
     onSuccess();
+  }
+
+  function handleTypeChange(type: LocationType) {
+    setSelectedType(type);
+    // Set default emoji for the type if no custom icon is set
+    if (!selectedIcon) {
+      setSelectedIcon(LOCATION_TYPE_CONFIG[type].defaultEmoji);
+    }
   }
 
   return (
@@ -84,6 +137,88 @@ export function LocationFormDialog({
                 {error}
               </div>
             )}
+
+            {/* Location Type (only for root locations) */}
+            {isRootLocation && (
+              <div className="grid gap-2">
+                <Label>Location Type</Label>
+                <Select
+                  value={selectedType ?? undefined}
+                  onValueChange={(v) => handleTypeChange(v as LocationType)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.entries(LOCATION_TYPE_CONFIG) as [LocationType, typeof LOCATION_TYPE_CONFIG.home][]).map(
+                      ([type, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <SelectItem key={type} value={type}>
+                            <span className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              {config.label}
+                            </span>
+                          </SelectItem>
+                        );
+                      }
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Icon Picker */}
+            <div className="grid gap-2">
+              <Label>Icon</Label>
+              <div className="flex items-center gap-2">
+                <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-12 w-12 text-2xl"
+                    >
+                      {selectedIcon || "📍"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2" align="start">
+                    <div className="grid grid-cols-10 gap-1">
+                      {LOCATION_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="flex h-7 w-7 items-center justify-center rounded hover:bg-muted"
+                          onClick={() => {
+                            setSelectedIcon(emoji);
+                            setEmojiPickerOpen(false);
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedIcon && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 w-full"
+                        onClick={() => {
+                          setSelectedIcon(null);
+                          setEmojiPickerOpen(false);
+                        }}
+                      >
+                        Clear icon
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+                <span className="text-sm text-muted-foreground">
+                  Click to choose an icon
+                </span>
+              </div>
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>

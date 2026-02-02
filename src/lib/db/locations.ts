@@ -12,6 +12,8 @@ function toDomainLocation(row: typeof locations.$inferSelect): Location {
     name: row.name,
     description: row.description,
     code: row.code,
+    icon: row.icon,
+    locationType: row.locationType,
     createdAt: formatDateRequired(row.createdAt),
     updatedAt: formatDateRequired(row.updatedAt),
   };
@@ -27,6 +29,8 @@ export async function createLocation(data: NewLocation): Promise<Location> {
       name: data.name,
       description: data.description ?? null,
       code: data.code.toUpperCase(),
+      icon: data.icon ?? null,
+      locationType: data.locationType ?? null,
     })
     .returning();
 
@@ -100,6 +104,12 @@ export async function updateLocation(
   }
   if (data.code !== undefined) {
     updateData.code = data.code.toUpperCase();
+  }
+  if (data.icon !== undefined) {
+    updateData.icon = data.icon;
+  }
+  if (data.locationType !== undefined) {
+    updateData.locationType = data.locationType;
   }
 
   const [row] = await db
@@ -196,6 +206,8 @@ export async function getLocationPath(
     name: row.name,
     description: row.description,
     code: row.code,
+    icon: row.icon,
+    locationType: row.location_type,
     createdAt:
       row.created_at instanceof Date
         ? row.created_at.toISOString()

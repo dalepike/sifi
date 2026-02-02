@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState, useImperativeHandle, forwardRef } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Home, Package, QrCode, ArrowRight } from "lucide-react";
 import { LocationTreeNode } from "./location-tree-node";
 import { getAllLocations } from "@/actions/locations";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import type { Location } from "@/types/domain";
 
 interface LocationTreeProps {
@@ -174,12 +175,75 @@ export const LocationTree = forwardRef<LocationTreeRef, LocationTreeProps>(
 
     if (rootNodes.length === 0) {
       return (
-        <div className="text-center py-12">
-          <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <p className="text-muted-foreground mb-4">
-            Add your first space to start organizing
-          </p>
-          <Button onClick={() => onAddChild(null)}>Add Space</Button>
+        <div className="space-y-6 p-4">
+          <div className="text-center">
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+              <Home className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Welcome to SiFi</h3>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+              Organize your belongings with a simple hierarchy and find anything with QR codes.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Card className="border-dashed">
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-500">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">1. Create Locations</p>
+                  <p className="text-xs text-muted-foreground">
+                    Start with spaces like &quot;Home&quot; or &quot;Office&quot;, then add rooms and spots within them.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+            </div>
+
+            <Card className="border-dashed">
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-green-500/10 text-green-500">
+                  <Package className="h-4 w-4" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">2. Add Items</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add items to locations. Items can be objects or containers that hold other items.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+            </div>
+
+            <Card className="border-dashed">
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-purple-500/10 text-purple-500">
+                  <QrCode className="h-4 w-4" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">3. Print QR Labels</p>
+                  <p className="text-xs text-muted-foreground">
+                    Generate QR codes for items. Scan later to instantly find where things are stored.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center pt-2">
+            <Button onClick={() => onAddChild(null)} size="lg">
+              <Home className="h-4 w-4 mr-2" />
+              Create Your First Space
+            </Button>
+          </div>
         </div>
       );
     }
