@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MapPin, Search, Activity, Tag, Printer } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { getPrintQueueCount } from "@/lib/print-queue";
 
 const navItems = [
   { href: "/locations", label: "Locations", icon: MapPin },
@@ -15,6 +18,17 @@ const navItems = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const [printQueueCount, setPrintQueueCount] = useState(0);
+
+  useEffect(() => {
+    // Initial count
+    setPrintQueueCount(getPrintQueueCount());
+
+    // Listen for changes
+    const handleChange = () => setPrintQueueCount(getPrintQueueCount());
+    window.addEventListener("print-queue-change", handleChange);
+    return () => window.removeEventListener("print-queue-change", handleChange);
+  }, []);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background sm:hidden">
@@ -22,19 +36,30 @@ export function MobileNav() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname.startsWith(item.href);
+          const showBadge = item.href === "/print-queue" && printQueueCount > 0;
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+                "relative flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className="h-5 w-5" />
+              <div className="relative">
+                <Icon className="h-5 w-5" />
+                {showBadge && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -right-2 -top-2 h-4 min-w-4 justify-center px-1 text-[10px]"
+                  >
+                    {printQueueCount}
+                  </Badge>
+                )}
+              </div>
               <span>{item.label}</span>
             </Link>
           );

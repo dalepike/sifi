@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Activity as ActivityIcon, Archive, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { getIconComponent } from "./activity-form-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -120,15 +121,20 @@ export function ActivityDetails({
     );
   }
 
+  const ActivityIconComponent = getIconComponent(activity.icon);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-500">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-lg"
+            style={{ backgroundColor: activity.color }}
+          >
             {activity.status === "archived" ? (
               <Archive className="h-6 w-6 text-white" />
             ) : (
-              <ActivityIcon className="h-6 w-6 text-white" />
+              <ActivityIconComponent className="h-6 w-6 text-white" />
             )}
           </div>
           <div>

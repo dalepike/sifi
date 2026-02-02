@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,8 +15,51 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ColorPicker } from "@/components/ui/color-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createActivity, updateActivity } from "@/actions/activities";
 import type { Activity } from "@/types/domain";
+
+// Available icons for activities
+const ACTIVITY_ICONS = [
+  { name: "folder", label: "Folder" },
+  { name: "palette", label: "Art" },
+  { name: "music", label: "Music" },
+  { name: "camera", label: "Photography" },
+  { name: "gamepad-2", label: "Gaming" },
+  { name: "wrench", label: "Tools" },
+  { name: "book", label: "Reading" },
+  { name: "dumbbell", label: "Fitness" },
+  { name: "tent", label: "Camping" },
+  { name: "bike", label: "Cycling" },
+  { name: "scissors", label: "Crafts" },
+  { name: "utensils", label: "Cooking" },
+] as const;
+
+// Get icon component by name
+export function getIconComponent(iconName: string) {
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    "folder": LucideIcons.Folder,
+    "palette": LucideIcons.Palette,
+    "music": LucideIcons.Music,
+    "camera": LucideIcons.Camera,
+    "gamepad-2": LucideIcons.Gamepad2,
+    "wrench": LucideIcons.Wrench,
+    "book": LucideIcons.Book,
+    "dumbbell": LucideIcons.Dumbbell,
+    "tent": LucideIcons.Tent,
+    "bike": LucideIcons.Bike,
+    "scissors": LucideIcons.Scissors,
+    "utensils": LucideIcons.Utensils,
+  };
+  return iconMap[iconName] || LucideIcons.Folder;
+}
 
 interface ActivityFormDialogProps {
   open: boolean;
@@ -32,6 +76,8 @@ export function ActivityFormDialog({
 }: ActivityFormDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [color, setColor] = useState("#6b7280");
+  const [icon, setIcon] = useState("folder");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,9 +89,13 @@ export function ActivityFormDialog({
       if (activity) {
         setName(activity.name);
         setDescription(activity.description || "");
+        setColor(activity.color || "#6b7280");
+        setIcon(activity.icon || "folder");
       } else {
         setName("");
         setDescription("");
+        setColor("#6b7280");
+        setIcon("folder");
       }
       setError(null);
     }
@@ -59,6 +109,8 @@ export function ActivityFormDialog({
     const formData = new FormData();
     formData.set("name", name);
     formData.set("description", description);
+    formData.set("color", color);
+    formData.set("icon", icon);
 
     if (activity) {
       formData.set("id", activity.id);
@@ -76,6 +128,8 @@ export function ActivityFormDialog({
 
     setSubmitting(false);
   };
+
+  const SelectedIcon = getIconComponent(icon);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,6 +165,40 @@ export function ActivityFormDialog({
                 placeholder="A brief description of this activity"
                 rows={3}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Color</Label>
+                <ColorPicker value={color} onChange={setColor} />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Icon</Label>
+                <Select value={icon} onValueChange={setIcon}>
+                  <SelectTrigger>
+                    <SelectValue>
+                      <div className="flex items-center gap-2">
+                        <SelectedIcon className="h-4 w-4" />
+                        <span>{ACTIVITY_ICONS.find(i => i.name === icon)?.label || "Folder"}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACTIVITY_ICONS.map((iconOption) => {
+                      const IconComp = getIconComponent(iconOption.name);
+                      return (
+                        <SelectItem key={iconOption.name} value={iconOption.name}>
+                          <div className="flex items-center gap-2">
+                            <IconComp className="h-4 w-4" />
+                            <span>{iconOption.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {error && (

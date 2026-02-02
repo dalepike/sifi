@@ -140,6 +140,8 @@ export interface Activity extends Timestamps {
   userId: string;
   name: string;
   description: string | null;
+  color: string;
+  icon: string;
   status: ActivityStatus;
 }
 
@@ -148,6 +150,8 @@ export interface NewActivity {
   userId: string;
   name: string;
   description?: string | null;
+  color?: string;
+  icon?: string;
   status?: ActivityStatus;
 }
 

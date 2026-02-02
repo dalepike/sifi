@@ -10,6 +10,8 @@ function toDomainActivity(row: typeof activities.$inferSelect): Activity {
     userId: row.userId,
     name: row.name,
     description: row.description,
+    color: row.color ?? "#6b7280",
+    icon: row.icon ?? "folder",
     status: row.status ?? "active",
     createdAt: formatDateRequired(row.createdAt),
     updatedAt: formatDateRequired(row.updatedAt),
@@ -24,6 +26,8 @@ export async function createActivity(data: NewActivity): Promise<Activity> {
       userId: data.userId,
       name: data.name,
       description: data.description ?? null,
+      color: data.color ?? "#6b7280",
+      icon: data.icon ?? "folder",
       status: data.status ?? "active",
     })
     .returning();
@@ -79,6 +83,12 @@ export async function updateActivity(
   }
   if (data.description !== undefined) {
     updateData.description = data.description;
+  }
+  if (data.color !== undefined) {
+    updateData.color = data.color;
+  }
+  if (data.icon !== undefined) {
+    updateData.icon = data.icon;
   }
   if (data.status !== undefined) {
     updateData.status = data.status;

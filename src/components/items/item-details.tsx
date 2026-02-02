@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Pencil, Trash2, Package, Box, Copy, Activity, Tag, Plus, X, Move } from "lucide-react";
+import { Pencil, Trash2, Package, Box, Copy, Activity, Tag, Plus, X, Move, Printer, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,7 @@ import { LocationBreadcrumb } from "@/components/locations/location-breadcrumb";
 import { MoveItemDialog } from "@/components/items/move-item-dialog";
 import { ItemQRCode } from "@/components/items/item-qr-code";
 import type { Item, ItemWithLocation, Activity as ActivityType, Tag as TagType } from "@/types/domain";
+import { addToPrintQueue, isInPrintQueue } from "@/lib/print-queue";
 
 interface ItemDetailsProps {
   itemId: string;
@@ -71,6 +72,9 @@ export function ItemDetails({
 
   // Move dialog
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+
+  // Print queue
+  const [inPrintQueue, setInPrintQueue] = useState(false);
 
   const loadItemData = async () => {
     setLoading(true);
@@ -110,6 +114,7 @@ export function ItemDetails({
 
   useEffect(() => {
     loadItemData();
+    setInPrintQueue(isInPrintQueue(itemId));
   }, [itemId]);
 
   const loadActivitiesForPopover = async () => {
@@ -253,6 +258,18 @@ export function ItemDetails({
           </div>
         </div>
         <div className="flex gap-1">
+          <Button
+            variant={inPrintQueue ? "secondary" : "ghost"}
+            size="icon"
+            onClick={() => {
+              addToPrintQueue(item.id);
+              setInPrintQueue(true);
+            }}
+            disabled={inPrintQueue}
+            title={inPrintQueue ? "In print queue" : "Add to print queue"}
+          >
+            {inPrintQueue ? <Check className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"

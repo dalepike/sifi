@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 
 export function ScanButton() {
   return (
-    <Link href="/scan">
-      <Button size="icon" variant="outline" className="h-9 w-9">
-        <QrCode className="h-5 w-5" />
-        <span className="sr-only">Scan QR Code</span>
-      </Button>
-    </Link>
+    <Button variant="outline" className="h-9" asChild>
+      <Link href="/scan">
+        <QrCode className="h-5 w-5 sm:mr-2" />
+        <span className="hidden sm:inline">Scan QR</span>
+        <span className="sr-only sm:hidden">Scan QR Code</span>
+      </Link>
+    </Button>
   );
 }

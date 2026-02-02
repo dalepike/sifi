@@ -124,6 +124,8 @@ export const activities = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
+    color: text("color").default("#6b7280"), // Gray-500 default
+    icon: text("icon").default("folder"), // Default icon name
     status: activityStatusEnum("status").default("active"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

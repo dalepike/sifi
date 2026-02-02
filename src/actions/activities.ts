@@ -16,6 +16,8 @@ import type { Activity, ActivityStatus, ActivityWithItemCount } from "@/types/do
 const activitySchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
   description: z.string().max(1000, "Description is too long").optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid color format").optional(),
+  icon: z.string().max(50).optional(),
   status: z.enum(["active", "archived"]).optional(),
 });
 
@@ -23,6 +25,8 @@ const updateActivitySchema = z.object({
   id: z.string().uuid("Invalid activity ID"),
   name: z.string().min(1, "Name is required").max(100, "Name is too long").optional(),
   description: z.string().max(1000, "Description is too long").optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid color format").optional(),
+  icon: z.string().max(50).optional(),
   status: z.enum(["active", "archived"]).optional(),
 });
 
@@ -46,6 +50,8 @@ export async function createActivity(
   const rawData = {
     name: formData.get("name"),
     description: formData.get("description") || undefined,
+    color: formData.get("color") || undefined,
+    icon: formData.get("icon") || undefined,
     status: (formData.get("status") as ActivityStatus) || "active",
   };
 
@@ -57,13 +63,15 @@ export async function createActivity(
     };
   }
 
-  const { name, description, status } = parsed.data;
+  const { name, description, color, icon, status } = parsed.data;
 
   try {
     const activity = await dbCreateActivity({
       userId,
       name,
       description: description || null,
+      color: color || "#6b7280",
+      icon: icon || "folder",
       status: status || "active",
     });
 
@@ -90,6 +98,8 @@ export async function updateActivity(
     id: formData.get("id"),
     name: formData.get("name") || undefined,
     description: formData.get("description"),
+    color: formData.get("color") || undefined,
+    icon: formData.get("icon") || undefined,
     status: formData.get("status") || undefined,
   };
 
@@ -101,7 +111,7 @@ export async function updateActivity(
     };
   }
 
-  const { id, name, description, status } = parsed.data;
+  const { id, name, description, color, icon, status } = parsed.data;
 
   // Verify activity exists and belongs to user
   const existing = await dbGetActivityById(id, userId);
@@ -113,6 +123,8 @@ export async function updateActivity(
     const activity = await dbUpdateActivity(id, userId, {
       name,
       description: description !== undefined ? description || null : undefined,
+      color,
+      icon,
       status,
     });
 

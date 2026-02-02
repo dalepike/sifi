@@ -110,7 +110,10 @@ export function LocationFormDialog({
                 className="font-mono uppercase"
               />
               <p className="text-xs text-muted-foreground">
-                A unique 2-character code for QR labels
+                This code appears on QR labels. Items in this location will have
+                codes like <code className="rounded bg-muted px-1 font-mono">
+                  {parentId ? "XX-" : ""}__-001
+                </code> where __ is your code.
               </p>
             </div>
 

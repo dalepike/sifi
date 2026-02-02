@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Plus } from "lucide-react";
+import { Plus, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LocationTree, type LocationTreeRef } from "./location-tree";
 import { LocationDetails } from "./location-details";
@@ -117,9 +117,11 @@ export function LocationBrowser() {
             onDelete={handleLocationDelete}
           />
         ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
-            <p className="text-muted-foreground">
-              Select a location to view details
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center">
+            <MapPin className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="font-medium text-lg">Select a Location</h3>
+            <p className="text-muted-foreground mt-2 max-w-[200px]">
+              Click on any location in the tree to view its details and items.
             </p>
           </div>
         )}

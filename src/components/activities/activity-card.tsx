@@ -1,9 +1,10 @@
 "use client";
 
-import { Activity as ActivityIcon, Archive } from "lucide-react";
+import { Archive } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getIconComponent } from "./activity-form-dialog";
 import type { Activity } from "@/types/domain";
 
 interface ActivityCardProps {
@@ -13,6 +14,8 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ activity, isSelected, onClick }: ActivityCardProps) {
+  const ActivityIconComponent = getIconComponent(activity.icon);
+
   return (
     <Card
       className={cn(
@@ -24,12 +27,13 @@ export function ActivityCard({ activity, isSelected, onClick }: ActivityCardProp
     >
       <CardContent className="flex items-center gap-3 py-3">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-500"
+          className="flex h-10 w-10 items-center justify-center rounded-lg"
+          style={{ backgroundColor: activity.color }}
         >
           {activity.status === "archived" ? (
             <Archive className="h-5 w-5 text-white" />
           ) : (
-            <ActivityIcon className="h-5 w-5 text-white" />
+            <ActivityIconComponent className="h-5 w-5 text-white" />
           )}
         </div>
         <div className="min-w-0 flex-1">
