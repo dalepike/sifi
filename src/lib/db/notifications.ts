@@ -21,6 +21,8 @@ function toDomainNotification(
     message: row.message,
     triggerDate: formatDateRequired(row.triggerDate),
     isRead: row.isRead,
+    recurrenceType: row.recurrenceType ?? "one-time",
+    recurrenceEndDate: row.recurrenceEndDate ? formatDateRequired(row.recurrenceEndDate) : null,
     createdAt: formatDateRequired(row.createdAt),
   };
 }
@@ -114,7 +116,7 @@ export async function markAllAsRead(userId: string): Promise<number> {
   return result.length;
 }
 
-// Create a new notification (with upsert for deduplication)
+// Create a new notification
 export async function createNotification(
   data: NewNotification
 ): Promise<Notification> {
@@ -127,37 +129,66 @@ export async function createNotification(
       title: data.title,
       message: data.message ?? null,
       triggerDate: new Date(data.triggerDate),
-    })
-    .onConflictDoNothing({
-      target: [
-        notifications.itemId,
-        notifications.type,
-        notifications.triggerDate,
-      ],
+      recurrenceType: data.recurrenceType ?? "one-time",
+      recurrenceEndDate: data.recurrenceEndDate ? new Date(data.recurrenceEndDate) : null,
     })
     .returning();
 
   if (!row) {
-    // Notification already exists (deduplicated)
-    const [existing] = await db
-      .select()
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.itemId, data.itemId ?? ""),
-          eq(notifications.type, data.type),
-          eq(notifications.triggerDate, new Date(data.triggerDate))
-        )
-      )
-      .limit(1);
-
-    if (existing) {
-      return toDomainNotification(existing);
-    }
     throw new Error("Failed to create notification");
   }
 
   return toDomainNotification(row);
+}
+
+// Update an existing notification (for custom reminders only)
+export async function updateNotification(
+  notificationId: string,
+  userId: string,
+  data: Partial<Pick<NewNotification, "title" | "message" | "triggerDate" | "recurrenceType" | "recurrenceEndDate">>
+): Promise<Notification | null> {
+  const updateData: Record<string, unknown> = {};
+
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.message !== undefined) updateData.message = data.message;
+  if (data.triggerDate !== undefined) updateData.triggerDate = new Date(data.triggerDate);
+  if (data.recurrenceType !== undefined) updateData.recurrenceType = data.recurrenceType;
+  if (data.recurrenceEndDate !== undefined) {
+    updateData.recurrenceEndDate = data.recurrenceEndDate ? new Date(data.recurrenceEndDate) : null;
+  }
+
+  const [updated] = await db
+    .update(notifications)
+    .set(updateData)
+    .where(
+      and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, userId),
+        eq(notifications.type, "custom_reminder") // Only allow editing custom reminders
+      )
+    )
+    .returning();
+
+  return updated ? toDomainNotification(updated) : null;
+}
+
+// Get all reminders for an item (custom + auto-generated)
+export async function getItemReminders(
+  itemId: string,
+  userId: string
+): Promise<Notification[]> {
+  const rows = await db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.itemId, itemId),
+        eq(notifications.userId, userId)
+      )
+    )
+    .orderBy(notifications.triggerDate);
+
+  return rows.map(toDomainNotification);
 }
 
 // Delete a notification

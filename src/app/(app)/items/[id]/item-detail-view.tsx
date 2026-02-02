@@ -34,9 +34,11 @@ import { MoveItemDialog } from "@/components/items/move-item-dialog";
 import { ItemQRCode } from "@/components/items/item-qr-code";
 import { ItemTagsSection } from "@/components/items/item-tags-section";
 import { AttachmentList } from "@/components/attachments";
+import { ReminderList } from "@/components/reminders";
 import { deleteItem, getItemsInContainer } from "@/actions/items";
 import { getAttachmentsForItem } from "@/actions/attachments";
-import type { ItemWithLocation, Item, AttachmentMeta } from "@/types/domain";
+import { getItemReminders } from "@/actions/notifications";
+import type { ItemWithLocation, Item, AttachmentMeta, Notification } from "@/types/domain";
 
 interface ItemDetailViewProps {
   item: ItemWithLocation;
@@ -52,6 +54,7 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
   const [loadingContents, setLoadingContents] = useState(false);
   const [copied, setCopied] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
+  const [reminders, setReminders] = useState<Notification[]>([]);
 
   const isContainer = item.type === "container";
   const Icon = isContainer ? Box : Package;
@@ -77,8 +80,17 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
     }
   };
 
+  // Load reminders
+  const loadReminders = async () => {
+    const result = await getItemReminders(item.id);
+    if (result.success) {
+      setReminders(result.data);
+    }
+  };
+
   useEffect(() => {
     loadAttachments();
+    loadReminders();
   }, [item.id]);
 
   const reloadItem = () => {
@@ -295,6 +307,13 @@ export function ItemDetailView({ item: initialItem }: ItemDetailViewProps) {
             itemId={item.id}
             attachments={attachments}
             onAttachmentsChange={loadAttachments}
+          />
+
+          {/* Reminders */}
+          <ReminderList
+            itemId={item.id}
+            reminders={reminders}
+            onRemindersChange={loadReminders}
           />
 
           {/* QR Code Section */}

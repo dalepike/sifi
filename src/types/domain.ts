@@ -225,6 +225,25 @@ export type NotificationType =
   | "maintenance_due"
   | "custom_reminder";
 
+// Recurrence types - discriminated union for type safety
+export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
+
+export type RecurrenceConfig =
+  | { type: "one-time" }
+  | { type: "recurring"; frequency: RecurrenceFrequency; endDate: string | null };
+
+// Type guard for recurring notifications
+export function isRecurringConfig(
+  config: RecurrenceConfig
+): config is Extract<RecurrenceConfig, { type: "recurring" }> {
+  return config.type === "recurring";
+}
+
+// Helper to check if notification is user-created (custom reminder)
+export function isCustomReminder(notification: Notification): boolean {
+  return notification.type === "custom_reminder";
+}
+
 export interface Notification {
   id: string;
   userId: string;
@@ -234,6 +253,9 @@ export interface Notification {
   message: string | null;
   triggerDate: string;
   isRead: boolean;
+  // Recurrence fields
+  recurrenceType: string;
+  recurrenceEndDate: string | null;
   createdAt: string;
 }
 
@@ -244,6 +266,17 @@ export interface NewNotification {
   title: string;
   message?: string | null;
   triggerDate: string;
+  recurrenceType?: string;
+  recurrenceEndDate?: string | null;
+}
+
+// For reminder form - input type with discriminated union
+export interface ReminderFormData {
+  itemId: string;
+  title: string;
+  message?: string;
+  triggerDate: string;
+  recurrence: RecurrenceConfig;
 }
 
 export interface NotificationWithItem extends Notification {

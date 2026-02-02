@@ -1,7 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle-client";
 import { users, notificationPreferences, notifications, items } from "@/lib/db/schema";
-import { eq, and, gte, lte, sql, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, ne, isNotNull } from "drizzle-orm";
+import { addDays, addWeeks, addMonths, addYears, lastDayOfMonth, getDate, setDate } from "date-fns";
+
+// Calculate next occurrence for recurring notifications
+function calculateNextOccurrence(
+  currentDate: Date,
+  recurrenceType: string,
+  originalDayOfMonth?: number
+): Date {
+  switch (recurrenceType) {
+    case "daily":
+      return addDays(currentDate, 1);
+    case "weekly":
+      return addWeeks(currentDate, 1);
+    case "monthly": {
+      const nextDate = addMonths(currentDate, 1);
+      // Handle month-end edge cases (Jan 31 -> Feb 28)
+      if (originalDayOfMonth !== undefined) {
+        const lastDay = getDate(lastDayOfMonth(nextDate));
+        const dayToSet = Math.min(originalDayOfMonth, lastDay);
+        return setDate(nextDate, dayToSet);
+      }
+      return nextDate;
+    }
+    case "yearly": {
+      const nextDate = addYears(currentDate, 1);
+      // Handle leap year (Feb 29 -> Feb 28)
+      if (originalDayOfMonth !== undefined) {
+        const lastDay = getDate(lastDayOfMonth(nextDate));
+        const dayToSet = Math.min(originalDayOfMonth, lastDay);
+        return setDate(nextDate, dayToSet);
+      }
+      return nextDate;
+    }
+    default:
+      return addDays(currentDate, 1);
+  }
+}
+
+function shouldCreateNextOccurrence(
+  nextDate: Date,
+  endDate: Date | null
+): boolean {
+  if (endDate === null) return true;
+  return nextDate <= endDate;
+}
 
 // Authenticate cron requests
 function isValidCronRequest(request: NextRequest): boolean {
@@ -163,10 +208,80 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Process recurring notifications that have been triggered
+    let recurringNotificationsCreated = 0;
+
+    // Find recurring notifications that have been read (triggered) and need next occurrence
+    const triggeredRecurring = await db
+      .select()
+      .from(notifications)
+      .where(
+        and(
+          ne(notifications.recurrenceType, "one-time"),
+          eq(notifications.isRead, true),
+          lte(notifications.triggerDate, now)
+        )
+      )
+      .limit(100); // Process in batches
+
+    for (const notification of triggeredRecurring) {
+      if (!notification.recurrenceType || notification.recurrenceType === "one-time") {
+        continue;
+      }
+
+      const originalDayOfMonth = getDate(notification.triggerDate);
+      const nextDate = calculateNextOccurrence(
+        notification.triggerDate,
+        notification.recurrenceType,
+        originalDayOfMonth
+      );
+
+      // Check if we should create the next occurrence
+      if (!shouldCreateNextOccurrence(nextDate, notification.recurrenceEndDate)) {
+        continue;
+      }
+
+      // Check if next occurrence already exists (prevent duplicates)
+      const existingNext = await db
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userId, notification.userId),
+            eq(notifications.itemId, notification.itemId ?? ""),
+            eq(notifications.type, notification.type),
+            eq(notifications.title, notification.title),
+            gte(notifications.triggerDate, nextDate)
+          )
+        )
+        .limit(1);
+
+      if (existingNext.length > 0) {
+        continue; // Next occurrence already exists
+      }
+
+      try {
+        await db.insert(notifications).values({
+          userId: notification.userId,
+          itemId: notification.itemId,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          triggerDate: nextDate,
+          recurrenceType: notification.recurrenceType,
+          recurrenceEndDate: notification.recurrenceEndDate,
+        });
+        recurringNotificationsCreated++;
+      } catch (err) {
+        console.error("Error creating recurring notification:", err);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       warrantyNotificationsCreated,
       maintenanceNotificationsCreated,
+      recurringNotificationsCreated,
       timestamp: now.toISOString(),
     });
   } catch (error) {

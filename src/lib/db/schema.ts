@@ -199,6 +199,15 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "custom_reminder",
 ]);
 
+// Recurrence type enum (stored as text with check constraint in DB)
+export const recurrenceTypeEnum = pgEnum("recurrence_type", [
+  "one-time",
+  "daily",
+  "weekly",
+  "monthly",
+  "yearly",
+]);
+
 // Notifications
 export const notifications = pgTable(
   "notifications",
@@ -211,17 +220,19 @@ export const notifications = pgTable(
     type: notificationTypeEnum("type").notNull(),
     title: text("title").notNull(),
     message: text("message"),
-    triggerDate: timestamp("trigger_date").notNull(),
+    triggerDate: timestamp("trigger_date", { withTimezone: true }).notNull(),
     isRead: boolean("is_read").default(false).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    // Recurrence fields (added in 0003 migration)
+    recurrenceType: text("recurrence_type").default("one-time"),
+    recurrenceEndDate: timestamp("recurrence_end_date", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index("notifications_user_unread_idx").on(table.userId, table.isRead),
-    uniqueIndex("notifications_item_type_date_idx").on(
-      table.itemId,
-      table.type,
-      table.triggerDate
-    ),
+    // Index for getItemReminders query
+    index("idx_notifications_item_id").on(table.itemId),
+    // Index for pending notifications (cron job)
+    index("idx_notifications_pending").on(table.triggerDate, table.isRead),
   ]
 );
 
