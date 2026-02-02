@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Download, Palette } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -31,9 +32,7 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Theme preferences coming soon. SiFi will support light and dark modes.
-            </p>
+            <ThemeToggle />
           </CardContent>
         </Card>
 
