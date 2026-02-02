@@ -53,6 +53,8 @@ export function LocationTreeNode({
           className="h-6 w-6 shrink-0"
           onClick={onToggleExpand}
           disabled={!hasChildren}
+          aria-label={isExpanded ? "Collapse" : "Expand"}
+          aria-expanded={isExpanded}
         >
           {hasChildren ? (
             isExpanded ? (
@@ -86,9 +88,9 @@ export function LocationTreeNode({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100"
+          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
           onClick={() => onAddChild(location.id)}
-          title="Add child location"
+          aria-label={`Add child to ${location.name}`}
         >
           <Plus className="h-4 w-4" />
         </Button>
