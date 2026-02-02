@@ -58,6 +58,10 @@ interface BaseItem extends Timestamps {
   name: string;
   description: string | null;
   photos: string | null; // JSON array of base64 strings or URLs
+  // Warranty and maintenance fields for notifications
+  warrantyExpiresAt: string | null;
+  maintenanceIntervalDays: number | null;
+  lastMaintenanceAt: string | null;
 }
 
 // Item must have exactly one parent (location or item)
@@ -74,6 +78,9 @@ export interface NewItem {
   parentLocationId?: string | null;
   parentItemId?: string | null;
   photos?: string | null;
+  warrantyExpiresAt?: string | null;
+  maintenanceIntervalDays?: number | null;
+  lastMaintenanceAt?: string | null;
 }
 
 export type ItemWithLocation = Item & {
@@ -203,4 +210,47 @@ export interface AttachmentMeta {
   sizeBytes: number;
   sortOrder: number;
   createdAt: string;
+}
+
+// Notification types
+export type NotificationType =
+  | "warranty_expiration"
+  | "maintenance_due"
+  | "custom_reminder";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  itemId: string | null;
+  type: NotificationType;
+  title: string;
+  message: string | null;
+  triggerDate: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NewNotification {
+  userId: string;
+  itemId?: string | null;
+  type: NotificationType;
+  title: string;
+  message?: string | null;
+  triggerDate: string;
+}
+
+export interface NotificationWithItem extends Notification {
+  item: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  warrantyReminderDays: number;
+  maintenanceReminderDays: number;
+  notificationsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
