@@ -6,6 +6,20 @@ This document tracks the product roadmap for SiFi, organized by named releases.
 
 ---
 
+## Planned
+
+### Deep Hierarchy Navigation (Release 6)
+**Status:** Planned | **Plan:** `docs/plans/2026-02-02-feat-drill-down-navigation-plan.md`
+
+Mobile-first drill-down navigation for locations and containers supporting 6-8 levels of nesting.
+
+- [ ] Hide tree sidebar on mobile (CSS responsive)
+- [ ] Full-width detail view on mobile
+- [ ] Horizontal scrolling breadcrumb for long paths
+- [ ] Verify container navigation works at depth
+
+---
+
 ## Future Vision: Households (v2.0)
 
 **Goal:** Transform SiFi into a family-shared household organization system
@@ -95,10 +109,16 @@ This major release is deferred to a future version. Key features:
 ## Archive
 
 Previous planning documents consolidated into this roadmap:
+
+**Roadmap Consolidation (2026-02-01):**
 - `docs/archive/2026-02-01-roadmap-consolidation/SiFi-Improvement-Plan.md`
 - `docs/archive/2026-02-01-roadmap-consolidation/SiFi-Interface-Design-Prospectus.md`
 - `docs/archive/2026-02-01-roadmap-consolidation/SiFi-Product-Vision-Roadmap.md`
 - `docs/archive/2026-02-01-roadmap-consolidation/SiFi-UX-Analysis-FollowUp-Report.md`
+
+**Older Documents:**
+- `docs/archive/older/SiFi-UX-Analysis-Report.md` - Initial UX analysis
+- `docs/archive/older/PLAN-move-qr-scanning.md` - Move/QR features (completed)
 
 ---
 
