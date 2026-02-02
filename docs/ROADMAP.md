@@ -39,20 +39,6 @@ This document tracks the product roadmap for SiFi, organized by named releases.
 
 ---
 
-## Upcoming Releases
-
-### Foundation Polish
-**Goal:** Location customization and improved empty states
-
-**Scope:**
-- Configurable emoji icons per location
-- Root location type selector (Home, Office, Vehicle)
-- Visual hierarchy with tree lines
-- Level-appropriate count labels (rooms/spots/items)
-- Improved empty state with "How it works" guide
-
----
-
 ## Future Vision: Households (v2.0)
 
 **Goal:** Transform SiFi into a family-shared household organization system
@@ -106,6 +92,13 @@ This major release is deferred to a future version. Key features:
 - [x] CSV export as ZIP bundle (spreadsheet-compatible)
 - [x] Export UI in Settings with live stats
 - [x] Includes: locations, items, tags, activities, attachment metadata
+
+### Foundation Polish (Release 4)
+- [x] Configurable emoji icons per location (40+ options)
+- [x] Root location type selector (Home, Office, Vehicle, Storage, Other)
+- [x] Visual hierarchy with tree lines
+- [x] Level-appropriate count labels (rooms/spots/items)
+- [x] Improved empty state with "How it works" onboarding guide
 
 ---
 
