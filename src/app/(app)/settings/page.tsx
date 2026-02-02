@@ -5,6 +5,7 @@ import { Bell, Download, Palette } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getNotificationPreferences } from "@/lib/db/notifications";
 import { NotificationSettings } from "./notification-settings";
+import { ExportSettings } from "./export-settings";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -63,13 +64,11 @@ export default async function SettingsPage() {
               Data Export
             </CardTitle>
             <CardDescription>
-              Export your inventory data.
+              Export your inventory data for backup or spreadsheet use.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Data export functionality coming soon. You will be able to export your locations, items, and tags.
-            </p>
+            <ExportSettings />
           </CardContent>
         </Card>
       </div>
