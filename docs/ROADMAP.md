@@ -1,6 +1,6 @@
 # SiFi Roadmap
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-02
 
 This document tracks the product roadmap for SiFi, organized by named releases.
 
@@ -40,35 +40,6 @@ This document tracks the product roadmap for SiFi, organized by named releases.
 ---
 
 ## Upcoming Releases
-
-### Notifications
-**Goal:** Allow users to set reminders and alerts for items
-
-**MVP Scope:**
-- In-app notifications only (no email/push initially)
-- Manual reminders with user-set dates
-- Notification bell with unread count
-- Mark as read/dismiss functionality
-
-**Use Cases:**
-- Warranty expiration reminders
-- Maintenance schedule alerts
-- Periodic "check on item" reminders
-
-### Data Portability
-**Goal:** Allow users to export and backup their inventory data
-
-**MVP Scope:**
-- JSON export (complete data, suitable for re-import)
-- CSV export (spreadsheet-compatible)
-- Export button in Settings
-- Download via browser
-
-**Entities:**
-- Locations (with hierarchy)
-- Items (with location paths)
-- Tags, Activities
-- Attachment metadata
 
 ### Foundation Polish
 **Goal:** Location customization and improved empty states
@@ -121,6 +92,20 @@ This major release is deferred to a future version. Key features:
 - [x] Attach PDFs, images, and documents to items
 - [x] Custom titles for each attachment
 - [x] View attachments from item detail page
+
+### Notifications (Release 2)
+- [x] In-app notification system
+- [x] Warranty expiration reminders
+- [x] Maintenance schedule alerts
+- [x] Notification bell with unread count
+- [x] Mark as read/dismiss functionality
+- [x] User preferences in Settings
+
+### Data Portability (Release 3)
+- [x] JSON export (complete data, suitable for re-import)
+- [x] CSV export as ZIP bundle (spreadsheet-compatible)
+- [x] Export UI in Settings with live stats
+- [x] Includes: locations, items, tags, activities, attachment metadata
 
 ---
 
