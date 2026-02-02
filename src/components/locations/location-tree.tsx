@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, useImperativeHandle, forwardRef } from "react";
+import { MapPin } from "lucide-react";
 import { LocationTreeNode } from "./location-tree-node";
 import { getAllLocations } from "@/actions/locations";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import type { Location } from "@/types/domain";
 
 interface LocationTreeProps {
@@ -172,11 +174,12 @@ export const LocationTree = forwardRef<LocationTreeRef, LocationTreeProps>(
 
     if (rootNodes.length === 0) {
       return (
-        <div className="rounded-md border border-dashed p-8 text-center">
-          <p className="text-muted-foreground">No locations yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create your first location to get started
+        <div className="text-center py-12">
+          <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <p className="text-muted-foreground mb-4">
+            Add your first space to start organizing
           </p>
+          <Button onClick={() => onAddChild(null)}>Add Space</Button>
         </div>
       );
     }

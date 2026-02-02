@@ -31,13 +31,21 @@ export function LocationTreeNode({
   children,
 }: LocationTreeNodeProps) {
   return (
-    <div>
+    <div className="relative">
+      {/* Tree line connector */}
+      {depth > 0 && (
+        <div
+          className="absolute left-0 top-0 h-full border-l border-border"
+          style={{ left: `${(depth - 1) * 24 + 12}px` }}
+        />
+      )}
       <div
         className={cn(
-          "group flex items-center gap-1 rounded-md py-1 pr-2 hover:bg-accent",
-          isSelected && "bg-accent"
+          "group relative flex items-center gap-1 rounded-md py-1.5 pr-2 transition-all duration-200",
+          "hover:bg-accent/50",
+          isSelected && "bg-accent text-accent-foreground"
         )}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        style={{ paddingLeft: `${depth * 24 + 8}px` }}
       >
         <Button
           variant="ghost"
@@ -45,6 +53,8 @@ export function LocationTreeNode({
           className="h-6 w-6 shrink-0"
           onClick={onToggleExpand}
           disabled={!hasChildren}
+          aria-label={isExpanded ? "Collapse" : "Expand"}
+          aria-expanded={isExpanded}
         >
           {hasChildren ? (
             isExpanded ? (
@@ -78,15 +88,17 @@ export function LocationTreeNode({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100"
+          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
           onClick={() => onAddChild(location.id)}
-          title="Add child location"
+          aria-label={`Add child to ${location.name}`}
         >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
 
-      {isExpanded && hasChildren && <div>{children}</div>}
+      {isExpanded && hasChildren && (
+        <div className="transition-all duration-200">{children}</div>
+      )}
     </div>
   );
 }
