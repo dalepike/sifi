@@ -29,27 +29,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      console.log("[login] calling signIn...");
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
-      console.log("[login] signIn result:", JSON.stringify(result, null, 2));
 
       if (result?.error) {
-        console.log("[login] error detected:", result.error);
         setError("Invalid email or password");
       } else if (result?.ok) {
-        console.log("[login] success, redirecting...");
         router.push("/");
         router.refresh();
       } else {
-        console.log("[login] unexpected result shape");
         setError("Login failed. Please try again.");
       }
-    } catch (err) {
-      console.error("[login] exception:", err);
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

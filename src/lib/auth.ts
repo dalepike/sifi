@@ -43,46 +43,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        try {
-          console.error("[auth] authorize called with email:", credentials?.email);
-          if (!credentials?.email || !credentials?.password) {
-            console.error("[auth] missing credentials");
-            return null;
-          }
-
-          const email = credentials.email as string;
-          const password = credentials.password as string;
-
-          const user = await getUserWithPasswordHash(email);
-          console.error("[auth] user lookup result:", !!user);
-          if (!user) {
-            console.error("[auth] USER NOT FOUND");
-            return null;
-          }
-
-          const isValid = verifyPassword(password, user.passwordHash);
-          console.error("[auth] password check:", isValid);
-          if (!isValid) {
-            console.error("[auth] PASSWORD MISMATCH");
-            return null;
-          }
-
-          console.error("[auth] SUCCESS");
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-          };
-        } catch (error) {
-          console.error("[auth] EXCEPTION:", error);
+        if (!credentials?.email || !credentials?.password) {
           return null;
         }
+
+        const email = credentials.email as string;
+        const password = credentials.password as string;
+
+        const user = await getUserWithPasswordHash(email);
+        if (!user) {
+          return null;
+        }
+
+        const isValid = verifyPassword(password, user.passwordHash);
+        if (!isValid) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        };
       },
     }),
   ],
   callbacks: {
     async session({ session, token }) {
-      console.error("[auth] session callback, token.sub:", token.sub);
       if (token.sub) {
         session.user.id = token.sub;
         const user = await getUserById(token.sub);
@@ -94,7 +81,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
     async jwt({ token, user }) {
-      console.error("[auth] jwt callback, user:", !!user, "token.sub:", token.sub);
       if (user) {
         token.sub = user.id;
       }
@@ -107,5 +93,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "jwt",
   },
-  debug: true,
+  debug: false,
 });
