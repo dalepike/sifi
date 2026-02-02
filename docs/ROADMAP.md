@@ -6,39 +6,6 @@ This document tracks the product roadmap for SiFi, organized by named releases.
 
 ---
 
-## Current Release: Interface Refresh
-
-**Status:** Planning
-**Goal:** Transform the interface with a polished dark design system
-
-### Phase 1: Foundation
-- [ ] Implement teal/cyan accent color palette
-- [ ] Update CSS custom properties for dark backgrounds
-- [ ] Apply typography scale (Inter, 12-36px)
-- [ ] Implement 4px-base spacing system
-- [ ] Update border radius tokens
-
-### Phase 2: Components
-- [ ] Redesign card components (rounded, borderless)
-- [ ] Update button styles (56px CTAs, circular icons)
-- [ ] Create location hierarchy row with tree lines
-- [ ] Improve empty state treatments
-- [ ] Redesign tag pills with category colors
-
-### Phase 3: Screens
-- [ ] Redesign Locations/Home with "Your Spaces" header
-- [ ] Update item detail with collapsible sections
-- [ ] Add space type selector (Home, Office, Vehicle)
-- [ ] Implement bottom navigation for mobile
-
-### Phase 4: Polish
-- [ ] Add transitions and micro-interactions
-- [ ] Implement skeleton loading states
-- [ ] Design error states
-- [ ] Conduct final accessibility audit
-
----
-
 ## Future Vision: Households (v2.0)
 
 **Goal:** Transform SiFi into a family-shared household organization system
@@ -55,6 +22,16 @@ This major release is deferred to a future version. Key features:
 ---
 
 ## Completed
+
+### Interface Refresh (Release 1)
+- [x] Teal/cyan accent color palette (#5BC0BE)
+- [x] Dark backgrounds (#121214, #1E1E22, #2A2A30)
+- [x] Light mode with equal polish
+- [x] CSS custom properties design system
+- [x] WCAG AA contrast compliance
+- [x] Skeleton loading states
+- [x] Tree line hierarchy visualization
+- [x] Empty state treatments
 
 ### UX Improvements (Sprint 1-4)
 - [x] Settings & Profile pages
