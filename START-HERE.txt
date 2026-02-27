@@ -1,0 +1,287 @@
+================================================================================
+INSTITUTIONAL LEARNINGS: START HERE
+================================================================================
+
+Welcome! You have 4 comprehensive documentation files about SiFi's notification
+system, reminders, scheduling, date/time handling, and CRUD patterns.
+
+This file shows you which document to read based on what you need.
+
+================================================================================
+STEP 1: UNDERSTAND THE STRUCTURE (2 minutes)
+================================================================================
+
+Read: README-INSTITUTIONAL-KNOWLEDGE.md
+      Location: /Users/dalepike/Projects/sifi/README-INSTITUTIONAL-KNOWLEDGE.md
+
+This is the master index that shows:
+- Overview of all 4 documents
+- Learning paths (beginner → advanced)
+- File references and quick links
+- Common questions answered
+
+Decision tree: Read this first to pick which document to deep-dive into.
+
+================================================================================
+STEP 2: PICK YOUR PATH
+================================================================================
+
+CHOOSE A (for concepts and deep understanding):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ READ: INSTITUTIONAL-LEARNINGS.md                                        │
+│ SIZE: 21 KB, 500+ lines                                                 │
+│ TIME: 1-2 hours to read completely                                      │
+│                                                                         │
+│ CONTAINS:                                                              │
+│ ✓ Database schema patterns (notifications table, indexes, enums)       │
+│ ✓ Date/time calculations (warranty, maintenance intervals)            │
+│ ✓ CRUD operations with user scoping (complete patterns)               │
+│ ✓ Server actions pattern (authentication, error handling)             │
+│ ✓ Cron job pattern (batch processing, deduplication)                  │
+│ ✓ Type safety & date formatting                                       │
+│ ✓ UI integration points (SWR polling, components)                     │
+│ ✓ Edge cases & handling (8 major cases documented)                    │
+│ ✓ Design decisions & rationale (why these choices)                    │
+│ ✓ When to apply patterns guide                                        │
+│                                                                         │
+│ BEST FOR:                                                              │
+│ • Building a notification system from scratch                         │
+│ • Deep understanding of all patterns                                  │
+│ • Understanding design decisions                                      │
+│ • Implementing similar systems in other projects                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+CHOOSE B (for step-by-step implementation):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ READ: PATTERNS-APPLIED-TO-USE-CASES.md                                  │
+│ SIZE: 15 KB, 400+ lines                                                 │
+│ TIME: 30 minutes per use case                                          │
+│                                                                         │
+│ SECTIONS:                                                              │
+│ 1. How to add new notification types                                   │
+│    → Example code for adding "threshold_exceeded" notifications        │
+│                                                                         │
+│ 2. How to implement custom reminders                                   │
+│    → Full implementation guide with dialog UI                         │
+│    → Server actions, database, components                             │
+│                                                                         │
+│ 3. How to build recurring tasks                                        │
+│    → Daily, weekly, monthly, biweekly                                 │
+│    → Complete table structure and cron logic                          │
+│                                                                         │
+│ 4. How to build complex recurrence rules                               │
+│    → "2nd Tuesday of month" pattern                                   │
+│    → Using RRule library approach                                     │
+│                                                                         │
+│ 5. Time zone handling best practices                                   │
+│    → UTC storage, client-side formatting                              │
+│                                                                         │
+│ 6. Complete CRUD template for any entity                               │
+│    → Create, read, update, delete patterns                            │
+│    → Server actions template                                          │
+│                                                                         │
+│ BEST FOR:                                                              │
+│ • You have a specific feature to build                                │
+│ • You want step-by-step instructions                                  │
+│ • You need code examples for your use case                            │
+│ • You're not sure what's implemented vs deferred                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+CHOOSE C (for quick code lookup):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ READ: QUICK-REFERENCE-PATTERNS.md                                       │
+│ SIZE: 7.4 KB, 250+ lines                                                │
+│ TIME: 5 minutes to find what you need                                  │
+│                                                                         │
+│ SECTIONS (ready to copy-paste):                                        │
+│ • Time window calculations                                             │
+│ • CRUD with user scoping                                               │
+│ • Deduplication patterns                                               │
+│ • Server action template                                               │
+│ • Database layer CRUD functions template                               │
+│ • Schema patterns for tables                                           │
+│ • Cron job authentication boilerplate                                  │
+│ • Batch processing pattern                                             │
+│ • Type conversions (DB → domain)                                       │
+│ • SWR hook pattern for frontend                                        │
+│ • Default values strategy                                              │
+│ • Testing checklist                                                    │
+│                                                                         │
+│ BEST FOR:                                                              │
+│ • You're in the middle of implementing                                 │
+│ • You need quick code snippets                                         │
+│ • You want to copy-paste patterns                                      │
+│ • You need to verify you're using right approach                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+REFERENCE (what was actually built):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ READ: docs/plans/2026-02-01-feat-notifications-release-2-plan.md        │
+│ SIZE: 432 lines                                                         │
+│ TIME: 30 minutes                                                        │
+│                                                                         │
+│ CONTAINS:                                                              │
+│ • Original release plan and requirements                               │
+│ • Phase breakdown (Database, Core, UI)                                 │
+│ • Acceptance criteria per phase                                        │
+│ • Data model diagram (ERD)                                             │
+│ • Design decisions table                                               │
+│ • Edge cases handled                                                   │
+│ • What was deferred (and why)                                          │
+│ • Migration notes                                                      │
+│                                                                         │
+│ BEST FOR:                                                              │
+│ • Understanding official requirements                                  │
+│ • Seeing what was built (vs what wasn't)                              │
+│ • Understanding scope of Release 2                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+STEP 3: USE THE SOURCE CODE
+================================================================================
+
+Once you've read the docs, refer back to the actual implementation:
+
+DATABASE LAYER (src/lib/db/)
+  notifications.ts    - All CRUD functions, date calculations
+  schema.ts          - All tables, enums, indexes, type exports
+  drizzle-client.ts  - formatDate() utilities
+
+SERVER SIDE (src/actions/ & src/app/api/)
+  actions/notifications.ts                    - Server actions with auth
+  app/api/cron/generate-notifications/route.ts - Daily batch job
+
+FRONTEND (src/components/ & src/app/(app)/)
+  components/notifications/notification-bell.tsx
+  components/notifications/notification-dropdown.tsx
+  app/(app)/notifications/page.tsx
+  app/(app)/notifications/notifications-list.tsx
+  app/(app)/settings/notification-settings.tsx
+
+================================================================================
+DECISION MATRIX: WHAT TO READ
+================================================================================
+
+YOUR SITUATION                          → RECOMMENDED DOCUMENT
+─────────────────────────────────────────────────────────────────────────
+I'm new to this codebase              → README-INSTITUTIONAL-KNOWLEDGE.md
+I want to understand everything       → INSTITUTIONAL-LEARNINGS.md
+I need to implement [specific feature] → PATTERNS-APPLIED-TO-USE-CASES.md
+I need code to copy-paste NOW         → QUICK-REFERENCE-PATTERNS.md
+I want to understand design decisions → docs/plans/.../release-2-plan.md
+I need quick reference while coding   → QUICK-REFERENCE-PATTERNS.md
+I'm confused about a pattern          → INSTITUTIONAL-LEARNINGS.md
+I want to see what was actually built → docs/plans/.../release-2-plan.md
+
+================================================================================
+TIME ESTIMATES
+================================================================================
+
+READING TIME (by learning style):
+  • Skimmer (titles & code only):     15 minutes
+  • Standard reader (all sections):   1-2 hours
+  • Deep diver (with code study):     2-4 hours
+
+IMPLEMENTATION TIME (for your feature):
+  • Simple (new notification type):   1-2 hours
+  • Medium (custom reminders):        2-4 hours
+  • Complex (recurring tasks):        4-8 hours
+  • Very complex (RRule recurrence):  8-16 hours
+
+================================================================================
+QUICK ANSWERS (Without Reading Full Docs)
+================================================================================
+
+Q: How do I add a new notification type?
+A: See PATTERNS-APPLIED-TO-USE-CASES.md section 1
+   (3 steps: add to enum, create calculation function, add cron logic)
+
+Q: How do I calculate a time window?
+A: See QUICK-REFERENCE-PATTERNS.md "Time Window Calculations"
+   (Pattern: new Date(now.getTime() + days * 24 * 60 * 60 * 1000))
+
+Q: How do I prevent duplicate notifications?
+A: See QUICK-REFERENCE-PATTERNS.md "Deduplication Pattern"
+   (Use onConflictDoNothing with unique constraint)
+
+Q: How should I scope queries to users?
+A: See QUICK-REFERENCE-PATTERNS.md "CRUD with User Scoping"
+   (Always add: eq(table.userId, userId) to where clause)
+
+Q: What should I use for the cron job?
+A: See QUICK-REFERENCE-PATTERNS.md "Cron Job Pattern"
+   (Bearer token auth, batch processing with onConflictDoNothing)
+
+Q: How do I handle user preferences with defaults?
+A: See INSTITUTIONAL-LEARNINGS.md section 2
+   (Auto-create on first access if missing, use DB defaults)
+
+Q: What about recurring schedules?
+A: See PATTERNS-APPLIED-TO-USE-CASES.md section 3
+   (Extends maintenance interval pattern with recurrenceType field)
+
+Q: How do I handle time zones?
+A: See PATTERNS-APPLIED-TO-USE-CASES.md section 5
+   (Store in UTC, format at boundaries, client interprets in local timezone)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Read README-INSTITUTIONAL-KNOWLEDGE.md (5 min)
+   → Understand structure and navigate
+
+2. Pick your path:
+   A) For deep understanding → Read INSTITUTIONAL-LEARNINGS.md
+   B) For implementation → Read PATTERNS-APPLIED-TO-USE-CASES.md
+   C) For quick lookups → Use QUICK-REFERENCE-PATTERNS.md
+
+3. Look at source code in src/
+   → Cross-reference with documentation
+
+4. Implement your feature
+   → Use QUICK-REFERENCE-PATTERNS.md while coding
+
+5. Test using checklist
+   → From QUICK-REFERENCE-PATTERNS.md testing section
+
+================================================================================
+FILE LOCATIONS (Absolute Paths)
+================================================================================
+
+Documentation:
+  /Users/dalepike/Projects/sifi/README-INSTITUTIONAL-KNOWLEDGE.md
+  /Users/dalepike/Projects/sifi/INSTITUTIONAL-LEARNINGS.md
+  /Users/dalepike/Projects/sifi/PATTERNS-APPLIED-TO-USE-CASES.md
+  /Users/dalepike/Projects/sifi/QUICK-REFERENCE-PATTERNS.md
+  /Users/dalepike/Projects/sifi/START-HERE.txt (this file)
+
+Release Plan:
+  /Users/dalepike/Projects/sifi/docs/plans/2026-02-01-feat-notifications-release-2-plan.md
+
+Source Code:
+  /Users/dalepike/Projects/sifi/src/lib/db/notifications.ts
+  /Users/dalepike/Projects/sifi/src/lib/db/schema.ts
+  /Users/dalepike/Projects/sifi/src/actions/notifications.ts
+  /Users/dalepike/Projects/sifi/src/app/api/cron/generate-notifications/route.ts
+
+================================================================================
+SUPPORT
+================================================================================
+
+If something is unclear:
+1. Check "Common Questions Answered" in README-INSTITUTIONAL-KNOWLEDGE.md
+2. Look for your pattern in QUICK-REFERENCE-PATTERNS.md
+3. Read relevant section in INSTITUTIONAL-LEARNINGS.md
+4. Examine source code in src/
+
+All patterns are documented with code examples. If you can't find something,
+it might be in the "What's NOT Implemented" section of the release plan.
+
+================================================================================
+
+Ready? Start with: README-INSTITUTIONAL-KNOWLEDGE.md
+
+Last Updated: February 2, 2026
+Status: Complete & production-ready
+
